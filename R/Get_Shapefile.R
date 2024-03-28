@@ -6,6 +6,7 @@
 #' @param level Character. Either \code{"NUTS-3"}, \code{"Province"}, \code{"LAU"}, \code{"Municipality"}. \code{"LAU"} by default
 #' @param lightShp Logical. If \code{TRUE}, the function downloads a generalised, i.e.less detailed, and lighter version of the shapefiles.
 #' \code{TRUE} by default.
+#' @param autoAbort Logical. Whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #'
 #' @return A spatial data frame of class \code{data.frame} and \code{sf}.
 #'
@@ -17,7 +18,7 @@
 #'   library(magrittr)
 #'
 #'
-#'   Prov23_shp <- Get_Shapefile(2023, lightShp = TRUE, level = "NUTS-3")
+#'   Prov23_shp <- Get_Shapefile(2023, lightShp = TRUE, level = "NUTS-3", autoAbort = TRUE)
 #'   ggplot2::ggplot() + ggplot2::geom_sf(data = Prov23_shp) +
 #'     ggplot2::ggtitle("Italian provinces in 2023/01/01")
 #'  }
@@ -26,17 +27,29 @@
 #' @export
 
 
-Get_Shapefile <- function(Year, level = "LAU", lightShp = TRUE){
+Get_Shapefile <- function(Year, level = "LAU", lightShp = TRUE, autoAbort = FALSE){
 
   while(Year < 2001 & Year != 1991){
     message(paste("Year", Year, "not available. Please choose another year between 2001 and the current year"))
     Year <- readline(prompt= "   ")
   }
 
-  if(!Check_connection()) return(NULL)
+  if(!Check_connection(autoAbort)) return(NULL)
 
   home.ISTAT.Shp <- "https://www.istat.it/it/archivio/222527"
-  homepage <- xml2::read_html(home.ISTAT.Shp)
+  homepage <- NULL
+  attempt <- 0
+  while(is.null(homepage) && attempt <= 10){
+    homepage <- tryCatch({
+      xml2::read_html(home.ISTAT.Shp)
+    }, error = function(e){
+      message("Cannot read the html; ", 10 - attempt,
+              " attempts left. If the problem persists, please contact the mantainer.\n")
+      return(NULL)
+    })
+    attempt <- attempt + 1
+  }
+  if(is.null(homepage)) return(NULL)
 
   links <- homepage %>% rvest::html_nodes("a") %>% rvest::html_attr("href") %>% unique()
   links <- grep(paste0("confini_amministrativi.*", Year), links, value = TRUE)

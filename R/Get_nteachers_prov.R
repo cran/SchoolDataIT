@@ -6,10 +6,10 @@
 #' Available in the formats: \code{2022}, \code{"2021/2022"}, \code{202122}, \code{20212022.} \code{2023} by default
 #' @param verbose Logical. If \code{TRUE}, the user keeps track of the main underlying operations. \code{TRUE} by default.
 #' @param show_col_types Logical. If \code{TRUE}, if the 'verbose' argument is also \code{TRUE}, the columns of the raw dataset are shown during the download. \code{FALSE} by default.
+#' @param autoAbort Logical. Whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #' @param filename Character. Which data to retrieve among the province counts of teachers/school personnel.
 #' By default it is \code{c("DOCTIT", "DOCSUP")}, which are the file names used so far for the number of tenured and temporary teachers respectively.
 #' Other file names are the following:
-#'
 #'
 #' \code{"ATATIT"} for the number of tenured non-teaching personnel
 #'
@@ -28,7 +28,7 @@
 #' @examples
 #'
 #'
-#' nteachers23 <- Get_nteachers_prov(2023, filename = "DOCTIT")
+#' nteachers23 <- Get_nteachers_prov(2023, filename = "DOCTIT", autoAbort = TRUE)
 #' nteachers23[, c(3,4,5)]
 #'
 #'
@@ -36,15 +36,28 @@
 #'
 #'
 Get_nteachers_prov <- function(Year = 2023, verbose = TRUE, show_col_types = FALSE,
-                               filename = c("DOCTIT", "DOCSUP")){
+                               filename = c("DOCTIT", "DOCSUP"), autoAbort = FALSE){
 
-  if(!Check_connection()) return(NULL)
+  if(!Check_connection(autoAbort)) return(NULL)
   options(dplyr.summarise.inform = FALSE)
 
   start.zero <- Sys.time()
 
   home.url <- "https://dati.istruzione.it/opendata/opendata/catalogo/elements1/?area=Personale%20Scuola"
-  homepage <- xml2::read_html(home.url)
+  homepage <- NULL
+  attempt <- 0
+  while(is.null(homepage) && attempt <= 10){
+    homepage <- tryCatch({
+      xml2::read_html(home.url)
+    }, error = function(e){
+      message("Cannot read the html; ", 10 - attempt,
+              " attempts left. If the problem persists, please contact the mantainer.\n")
+      return(NULL)
+    })
+    attempt <- attempt + 1
+  }
+  if(is.null(homepage)) return(NULL)
+
   name_pattern <- "([0-9]+)\\.(csv)$"
   pattern <- ifelse(year.patternA(Year)=="201516", "1516", year.patternA(Year) )
 
@@ -79,8 +92,19 @@ Get_nteachers_prov <- function(Year = 2023, verbose = TRUE, show_col_types = FAL
     status <- 0
     while(status != 200){
       file.url <- file.path(base.url, link)
-      response <- httr::GET(file.url)
+      response <- tryCatch({
+        httr::GET(file.url)
+      }, error = function(e) {
+        message("Error occurred during scraping, attempt repeated ... \n")
+        NULL
+      })
       status <- response$status_code
+      if(status != 200){
+        message("Operation exited with status: ", status, "; operation repeated \n")
+      }
+      if(is.null(response)){
+        status <- 0
+      }
       if(status != 200){
         message("Operation exited with status: ", status, "; operation repeated")
       }
@@ -93,9 +117,8 @@ Get_nteachers_prov <- function(Year = 2023, verbose = TRUE, show_col_types = FAL
       input[[element.name]] <- dat
       input[[element.name]] <- input[[element.name]][!duplicated(input[[element.name]]),]
 
-
     } else {
-      warning(paste("Wrong file type:", httr::http_type(response)) )
+      message(paste("Wrong file type:", httr::http_type(response)) )
       cat("Failed to download and process:", link, "\n")
     }
     endtime <- Sys.time()

@@ -33,6 +33,7 @@
 #' If the data include the Invalsi census survey, please select a level consistent with the chosen educational grade. \code{"Media"} by default.
 #  @param Invalsi Logical. whether the data to map include the Invalsi survey. \code{TRUE} by default.
 #  @param Invalsi.subj Character. If \code{Invalsi == TRUE}, the school subject(s) to include, among \code{"English_listening"}/\code{"ELI"}, \code{"English_reading"}/\code{"ERE"}, \code{"Italian"}/\code{"Ita"} and \code{"Mathematics"}/\code{"MAT"}. All four by default.
+#' @param autoAbort Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #' @param ... Additional arguments for the input database, if not provided; see \code{\link{Set_DB}}
 #'
 #'
@@ -82,7 +83,7 @@ Map_DB <- function(
     main_pos = "top",
     main = "",
     order = NULL,
-    #Invalsi = TRUE,
+    autoAbort = FALSE,
     ...){
 
   #rlang::check_installed("sf", reason = "Package \"sf\" must be installed to manage geometries in shapefiles.")
@@ -92,19 +93,22 @@ Map_DB <- function(
   YearMinus1.n <- Year - 1
   while(is.null(input_shp)){
     input_shp <- Get_Shapefile(Year = ifelse(
-      Year.n %in% c(2016, 2018), Year.n, YearMinus1.n), level = level, lightShp = TRUE)
+      Year.n %in% c(2016, 2018), Year.n, YearMinus1.n), level = level, lightShp = TRUE,
+      autoAbort = autoAbort)
     if(is.null(input_shp)){
-      holdOn <- ""
-      message("Error during shapefile retrieving. Would you abort the whole operation or retry?",
-              "    - To abort the operation, press `A` \n",
-              "    - To retry data retrieving, press any other key \n")
-      holdOn <- readline(prompt = "    ")
-      if(toupper(holdOn) == "A"){
-        cat("You chose to abort the operation \n")
-        return(NULL)
-      } else {
-        cat("You chose to retry \n")
-      }
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during shapefile retrieving. Would you abort the whole operation or retry?",
+                "    - To abort the operation, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          return(NULL)
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else return(NULL)
     }
   }
 
@@ -112,19 +116,21 @@ Map_DB <- function(
   #args <- args[which(names(args) %in% names(formals(Set_DB)))]
 
   while(is.null(data)) {
-    data <- Set_DB(Year = Year, level = level, ...)  #do.call(Set_DB, args)
+    data <- Set_DB(Year = Year, level = level, autoAbort = autoAbort, ...)  #do.call(Set_DB, args)
     if(is.null(data)){
-      holdOn <- ""
-      message("Error during data retrieving. Would you abort the whole operation or retry?",
-              "    - To abort the operation, press `A` \n",
-              "    - To retry data retrieving, press any other key \n")
-      holdOn <- readline(prompt = "    ")
-      if(toupper(holdOn) == "A"){
-        cat("You chose to abort the operation \n")
-        return(NULL)
-      } else {
-        cat("You chose to retry \n")
-      }
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during data retrieving. Would you abort the whole operation or retry?",
+                "    - To abort the operation, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          return(NULL)
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else return(NULL)
     }
   }
 

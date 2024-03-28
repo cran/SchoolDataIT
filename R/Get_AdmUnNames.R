@@ -5,7 +5,7 @@
 #' @param Year Numeric or character value. Last available is 2024.
 #' For coherence with school data, it is also in the formats: \code{2023}, \code{"2022/2023"}, \code{202223}, \code{20222023}. \code{2023} by default.
 #' @param date Character. The reference date, in format \code{"dd_mm_"}. Usually, the administrative codes are available at 01/01, at 06/30 and 12/31 of every year. \code{"01_01_"} by default.
-#'
+#' @param autoAbort Logical. Whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #'
 #' @return An object of class \code{tbl_df}, \code{tbl} and \code{data.frame}, including: NUTS-3 code, NUTS-3 abbreviation,
 #' LAU code, LAU name (description) and cadastral code. All variables are characters except for the NUTS-3 code.
@@ -14,7 +14,7 @@
 #'
 #'
 #' \donttest{
-#'   Get_AdmUnNames(2023)
+#'   Get_AdmUnNames(2024, autoAbort = TRUE)
 #' }
 #'
 #' @source <https://www.istat.it/it/archivio/6789>
@@ -23,11 +23,11 @@
 
 
 
-Get_AdmUnNames <- function(Year = 2023, date = "01_01_"){
+Get_AdmUnNames <- function(Year = 2023, date = "01_01_", autoAbort = FALSE){
 
   #utils::globalVariables(".", package = "SchoolDataIT", add = FALSE)
 
-  if(!Check_connection()) return(NULL)
+  if(!Check_connection(autoAbort = autoAbort)) return(NULL)
 
   pattern0 <- "Archivio-elenco-comuni-codici-e-denominazioni_Anni_"
   pattern1<- ifelse(year.patternA(Year) %in% c(
@@ -44,7 +44,19 @@ Get_AdmUnNames <- function(Year = 2023, date = "01_01_"){
   pattern <- paste0(pattern0, pattern1)
 
   home.ISTAT <- "https://www.istat.it/it/archivio/6789"
-  homepage <- xml2::read_html(home.ISTAT)
+  homepage <- NULL
+  attempt <- 0
+  while(is.null(homepage) && attempt <= 10){
+    homepage <- tryCatch({
+      xml2::read_html(home.ISTAT)
+    }, error = function(e){
+      message("Cannot read the html; ", 10 - attempt,
+              " attempts left. If the problem persists, please contact the mantainer.\n")
+      return(NULL)
+    })
+    attempt <- attempt + 1
+  }
+  if(is.null(homepage)) return(NULL)
   link <- homepage %>% rvest::html_nodes("a") %>% rvest::html_attr("href") %>% unique()
   link <- grep(pattern, link, value = TRUE)
   if(length(link) == 0L){

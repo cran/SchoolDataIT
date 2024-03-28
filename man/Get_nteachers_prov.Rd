@@ -11,7 +11,8 @@ Get_nteachers_prov(
   Year = 2023,
   verbose = TRUE,
   show_col_types = FALSE,
-  filename = c("DOCTIT", "DOCSUP")
+  filename = c("DOCTIT", "DOCSUP"),
+  autoAbort = FALSE
 )
 }
 \arguments{
@@ -26,11 +27,12 @@ Available in the formats: \code{2022}, \code{"2021/2022"}, \code{202122}, \code{
 By default it is \code{c("DOCTIT", "DOCSUP")}, which are the file names used so far for the number of tenured and temporary teachers respectively.
 Other file names are the following:
 
-
 \code{"ATATIT"} for the number of tenured non-teaching personnel
 
 
 \code{"ATASUP"} for the number of temporary non-teaching personnel}
+
+\item{autoAbort}{Logical. Whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.}
 }
 \value{
 An object of class \code{tbl_df}, \code{tbl} and \code{data.frame}.
@@ -46,7 +48,7 @@ the \code{filename} argument accordingly.
 \examples{
 
 
-nteachers23 <- Get_nteachers_prov(2023, filename = "DOCTIT")
+nteachers23 <- Get_nteachers_prov(2023, filename = "DOCTIT", autoAbort = TRUE)
 nteachers23[, c(3,4,5)]
 
 

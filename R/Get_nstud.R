@@ -29,7 +29,7 @@
 #'
 #' @param verbose Logical. If \code{TRUE}, the user keeps track of the main underlying operations. \code{TRUE} by default.
 #' @param show_col_types Logical. If \code{TRUE}, if the \code{verbose} argument is also \code{TRUE}, the columns of the raw dataset are shown during the download. \code{FALSE} by default.
-#'
+#' @param autoAbort Logical. Whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #'
 #' @source \href{https://dati.istruzione.it/opendata/opendata/catalogo/elements1/?area=Studenti}{Homepage}
 #'
@@ -37,7 +37,7 @@
 #' @examples
 #'
 #' \donttest{
-#'   Get_nstud(2023, filename = "ALUCORSOINDCLASTA")
+#'   Get_nstud(2023, filename = "ALUCORSOINDCLASTA", autoAbort = TRUE)
 #' }
 #'
 #'
@@ -53,14 +53,26 @@
 #' @export
 
 Get_nstud <- function(Year = 2023, filename = c("ALUCORSOETASTA", "ALUCORSOINDCLASTA"),
-                      verbose = TRUE, show_col_types = FALSE){
+                      verbose = TRUE, show_col_types = FALSE, autoAbort = FALSE){
 
-  if(!Check_connection()) return(NULL)
+  if(!Check_connection(autoAbort)) return(NULL)
 
   start.zero <- Sys.time()
 
   home.url <- "https://dati.istruzione.it/opendata/opendata/catalogo/elements1/?area=Studenti"
-  homepage <- xml2::read_html(home.url)
+  homepage <- NULL
+  attempt <- 0
+  while(is.null(homepage) && attempt <= 10){
+    homepage <- tryCatch({
+      xml2::read_html(home.url)
+    }, error = function(e){
+      message("Cannot read the html; ", 10 - attempt,
+              " attempts left. If the problem persists, please contact the mantainer.\n")
+      return(NULL)
+    })
+    attempt <- attempt + 1
+  }
+  if(is.null(homepage)) return(NULL)
   name_pattern <- "([0-9]+)\\.(csv)$"
   pattern <- year.patternA(Year)
 
@@ -95,8 +107,16 @@ Get_nstud <- function(Year = 2023, filename = c("ALUCORSOETASTA", "ALUCORSOINDCL
     while(status != 200){
       base.url <- dirname(home.url)
       file.url <- file.path(base.url, link)
-      response <- httr::GET(file.url)
+      response <- tryCatch({
+        httr::GET(file.url)
+      }, error = function(e) {
+        message("Error occurred during scraping, attempt repeated ... \n")
+        NULL
+      })
       status <- response$status_code
+      if(is.null(response)){
+        status <- 0
+      }
       if(status != 200){
         message("Operation exited with status: ", status, "; operation repeated")
       }

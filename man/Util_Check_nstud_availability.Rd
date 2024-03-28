@@ -21,7 +21,8 @@ Util_Check_nstud_availability(
   input_InnerAreas = NULL,
   input_Prov_shp = NULL,
   input_AdmUnNames = NULL,
-  input_School2mun = NULL
+  input_School2mun = NULL,
+  autoAbort = FALSE
 )
 }
 \arguments{
@@ -64,6 +65,8 @@ If \code{NULL}, it will be downloaded automatically, but not saved in the global
 
 \item{input_School2mun}{Object of class \code{list} with elements of class \code{tbl_df}, \code{tbl} and \code{data.frame}, obtained as output of the function \code{\link{Get_School2mun}}.
 The mapping from school codes to municipality (and province) codes. If \code{NULL}, it will be downloaded automatically, but not saved in the global environment. \code{NULL} by default.}
+
+\item{autoAbort}{Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.}
 }
 \value{
 An object of class \code{list} including two elements:

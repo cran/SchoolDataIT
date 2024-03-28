@@ -24,6 +24,7 @@
 #' The classification of peripheral municipalities, needed only if \code{InnerAreas == TRUE}, obtained as output of the \code{\link{Get_InnerAreas}} function.
 #' If \code{NULL}, it will be downloaded automatically, but not saved in the global environment.
 #' \code{NULL} by default
+#' @param autoAbort Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #' @param ... Additional arguments to the function \code{Util_DB_MIUR_num} in case no data are provided or data.
 #'
 #'
@@ -61,9 +62,10 @@
 #'
 #'
 #' DB23_MIUR$Municipality_data[, -c(1,2,4)]
+#' summary(DB23_MIUR$Municipality_data)
 #'
 #' DB23_MIUR$Province_data[, -c(1,3)]
-#'
+#' summary(DB23_MIUR$Province_data)
 #'
 #'
 #'
@@ -76,26 +78,28 @@ Group_DB_MIUR <- function(data = NULL, Year = 2023,
                           count_units = TRUE, countname="nbuildings",
                           count_missing = TRUE, verbose = TRUE,
                           track_deleted = TRUE, InnerAreas = TRUE, ord_InnerAreas = FALSE,
-                          input_InnerAreas = NULL, ...){
+                          input_InnerAreas = NULL, autoAbort = FALSE, ...){
 
   options(dplyr.summarise.inform = FALSE)
 
   # No input provided: data are downloaded
   while(is.null(data)){
-    data <- Get_DB_MIUR(Year = Year, verbose = verbose) %>%
+    data <- Get_DB_MIUR(Year = Year, verbose = verbose, autoAbort = autoAbort) %>%
       Util_DB_MIUR_num(track_deleted = track_deleted, ...)
     if(is.null(data)){
-      holdOn <- ""
-      message("Error during school buildings DB retrieving. Would you abort the whole operation or retry?",
-              "    - To abort the operation, press `A` \n",
-              "    - To retry data retrieving, press any other key \n")
-      holdOn <- readline(prompt = "    ")
-      if(toupper(holdOn) == "A"){
-        cat("You chose to abort the operation \n")
-        return(NULL)
-      } else {
-        cat("You chose to retry \n")
-      }
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during school buildings DB retrieving. Would you abort the whole operation or retry?",
+                "    - To abort the operation, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          return(NULL)
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else return(NULL)
     }
   }
 
@@ -122,7 +126,7 @@ Group_DB_MIUR <- function(data = NULL, Year = 2023,
   if(InnerAreas){
     if(is.null(input_InnerAreas)) {
       if(verbose) cat("Retrieving Inner areas classification: \n")
-      input_InnerAreas <- Get_InnerAreas()
+      input_InnerAreas <- Get_InnerAreas(autoAbort)
       if(is.null(input_InnerAreas)){
         message("Failed to import inner areas classification")
       }

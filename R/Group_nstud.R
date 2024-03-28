@@ -36,6 +36,7 @@
 #' The ISTAT file including all the codes and the names of the administrative units for the year in scope.
 #' Only needed if \code{check == TRUE} and the argument \code{input_School2mun} is \code{NULL}.
 #' If \code{NULL}, it will be downloaded automatically, but not saved in the global environment. \code{NULL} by default.
+#' @param autoAbort Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #' @param ... Additional arguments to the function \code{\link{Util_nstud_wide}} if \code{data} is not provided.
 #'
 #'
@@ -58,13 +59,13 @@
 #
 #' Year <- 2023
 #'
-#' Group_nstud(data = example_input_nstud23, Year = Year,
-#'             input_Registry2 = example_input_Registry23,
-#'             InnerAreas = FALSE,  input_School2mun = example_School2mun23)
+#' nstud23_aggr <- Group_nstud(data = example_input_nstud23, Year = Year,
+#'                            input_Registry2 = example_input_Registry23,
+#'                            InnerAreas = FALSE,  input_School2mun = example_School2mun23)
 #'
+#' summary(nstud23_aggr$Municipality_data[,c(46,47,48)])
 #'
-#
-#'
+#' summary(nstud23_aggr$Province_data[,c(44,45,46)])
 #'
 #'
 #' @export
@@ -76,7 +77,8 @@ Group_nstud <- function(data = NULL, Year = 2023,
                         ord_InnerAreas = FALSE, check_ggplot = FALSE,
                         missing_to_1 = FALSE, input_Registry2 = NULL,
                         input_InnerAreas = NULL, input_Prov_shp = NULL,
-                        input_School2mun = NULL, input_AdmUnNames = NULL, ...) {
+                        input_School2mun = NULL, input_AdmUnNames = NULL,
+                        autoAbort = FALSE, ...) {
 
   options(dplyr.summarise.inform = FALSE)
   . <- NULL
@@ -84,19 +86,21 @@ Group_nstud <- function(data = NULL, Year = 2023,
   start.zero <- Sys.time()
 
   while(is.null(data)){
-    data <- Get_nstud(Year = Year, verbose = verbose)
+    data <- Get_nstud(Year = Year, verbose = verbose, autoAbort = autoAbort)
     if(is.null(data)){
-      holdOn <- ""
-      message("Error during students counts retrieving. Would you abort the whole operation or retry?",
-              "    - To abort the operation, press `A` \n",
-              "    - To retry data retrieving, press any other key \n")
-      holdOn <- readline(prompt = "    ")
-      if(toupper(holdOn) == "A"){
-        cat("You chose to abort the operation \n")
-        return(NULL)
-      } else {
-        cat("You chose to retry \n")
-      }
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during students counts retrieving. Would you abort the whole operation or retry?",
+                "    - To abort the operation, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          return(NULL)
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else return(NULL)
     }
   }
 
@@ -113,19 +117,22 @@ Group_nstud <- function(data = NULL, Year = 2023,
   while(is.null(input_School2mun)){
     input_School2mun <- Get_School2mun(
       Year = Year,verbose = verbose,
-      input_Registry2 = input_Registry2, input_AdmUnNames = input_AdmUnNames)
+      input_Registry2 = input_Registry2, input_AdmUnNames = input_AdmUnNames,
+      autoAbort = autoAbort)
     if(is.null(input_School2mun)){
-      holdOn <- ""
-      message("Error occurred in mapping school to municipalities. Would you abort the whole operation or retry?",
-              "    - To abort the operation, press `A` \n",
-              "    - To retry data retrieving, press any other key \n")
-      holdOn <- readline(prompt = "    ")
-      if(toupper(holdOn) == "A"){
-        cat("You chose to abort the operation \n")
-        return(NULL)
-      } else {
-        cat("You chose to retry \n")
-      }
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error occurred in mapping school to municipalities. Would you abort the whole operation or retry?",
+                "    - To abort the operation, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          return(NULL)
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else return(NULL)
     }
   }
   if(!is.data.frame(input_School2mun)) School2mun.R <- input_School2mun[[check_registry]]
@@ -195,7 +202,8 @@ Group_nstud <- function(data = NULL, Year = 2023,
                                       ord_InnerAreas = ord_InnerAreas,
                                       input_Registry2 = input_Registry2, input_AdmUnNames = NULL,
                                       input_InnerAreas = input_InnerAreas,
-                                      input_Prov_shp = input_Prov_shp, input_School2mun = input_School2mun)
+                                      input_Prov_shp = input_Prov_shp, input_School2mun = input_School2mun,
+                                      autoAbort = autoAbort)
   }
   if(is.null(nstud.check)){
     message("Error occurred during the students count availability check")
@@ -249,7 +257,7 @@ Group_nstud <- function(data = NULL, Year = 2023,
       dplyr::mutate(Province_code = as.numeric(.data$Province_code))
   }
 
-    endtime <- Sys.time()
+  endtime <- Sys.time()
 
   if(verbose){
     cat(paste("Total time needed to aggregate students number data",

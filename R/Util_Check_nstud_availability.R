@@ -34,6 +34,7 @@
 #' If \code{NULL}, it will be downloaded automatically, but not saved in the global environment. \code{NULL} by default.
 #' @param input_School2mun Object of class \code{list} with elements of class \code{tbl_df}, \code{tbl} and \code{data.frame}, obtained as output of the function \code{\link{Get_School2mun}}.
 #' The mapping from school codes to municipality (and province) codes. If \code{NULL}, it will be downloaded automatically, but not saved in the global environment. \code{NULL} by default.
+#' @param autoAbort Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #'
 #'
 #'
@@ -79,63 +80,70 @@ Util_Check_nstud_availability <- function(data, Year,
                                           ggplot = TRUE, toplot_registry = "Any",
                                           InnerAreas = TRUE, ord_InnerAreas = FALSE,
                                           input_Registry2 = NULL, input_InnerAreas = NULL,
-                                          input_Prov_shp = NULL, input_AdmUnNames = NULL, input_School2mun = NULL){
+                                          input_Prov_shp = NULL, input_AdmUnNames = NULL,
+                                          input_School2mun = NULL, autoAbort = FALSE){
 
   options(dplyr.summarise.inform = FALSE)
 
   while(is.null(input_Prov_shp) && ggplot){
     if(verbose) cat("Downloading the shapefile (since ggplot has been required) \n")
     input_Prov_shp <- Get_Shapefile(
-      Year = as.numeric(year.patternA(Year))%/%100+1,level = "NUTS-3", lightShp = TRUE)
+      Year = as.numeric(year.patternA(Year))%/%100+1,level = "NUTS-3", autoAbort = autoAbort, lightShp = TRUE)
     if(is.null(input_Prov_shp)){
-      holdOn <- ""
-      message("Error during shapefile retrieving. Would you abort this element or retry? \n",
-              "    - To abort the element, press `A` \n",
-              "    - To retry data retrieving, press any other key \n")
-      holdOn <- readline(prompt = "    ")
-      if(toupper(holdOn) == "A"){
-        cat("You chose to abort the element \n")
-        ggplot <- FALSE
-      } else {
-        cat("You chose to retry \n")
-      }
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during shapefile retrieving. Would you abort this element or retry? \n",
+                "    - To abort the element, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the element \n")
+          ggplot <- FALSE
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else ggplot <- FALSE
     }
   }
 
   while(is.null(input_School2mun)){
     input_School2mun <- Get_School2mun(
       Year = Year, verbose = verbose, input_AdmUnNames = input_AdmUnNames,
-      input_Registry2 = input_Registry2)
+      input_Registry2 = input_Registry2, autoAbort = autoAbort)
     if(is.null(input_School2mun)){
-      holdOn <- ""
-      message("Error during mapping schools to municipalities. Would you abort the whole operation or retry? \n",
-              "    - To abort the operation, press `A` \n",
-              "    - To retry data retrieving, press any other key \n")
-      holdOn <- readline(prompt = "    ")
-      if(toupper(holdOn) == "A"){
-        cat("You chose to abort the operation \n")
-        return(NULL)
-      } else {
-        cat("You chose to retry \n")
-      }
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during mapping schools to municipalities. Would you abort the whole operation or retry? \n",
+                "    - To abort the operation, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          return(NULL)
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else return(NULL)
     }
   }
 
   while(InnerAreas && is.null(input_InnerAreas)){
     if(verbose) cat("Retrieving the classification of inner areas \n")
-    input_InnerAreas <- Get_InnerAreas()
+    input_InnerAreas <- Get_InnerAreas(autoAbort = autoAbort)
     if(is.null(input_InnerAreas)){
-      holdOn <- ""
-      message("Error during inner areas retrieving. Would you abort this element or retry? \n",
-              "    - To abort the element, press `A` \n",
-              "    - To retry data retrieving, press any other key \n")
-      holdOn <- readline(prompt = "    ")
-      if(toupper(holdOn) == "A"){
-        cat("You chose to abort the element \n")
-        InnerAreas <- FALSE
-      } else {
-        cat("You chose to retry \n")
-      }
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during inner areas retrieving. Would you abort this element or retry? \n",
+                "    - To abort the element, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the element \n")
+          InnerAreas <- FALSE
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else InnerAreas <- FALSE
     }
   }
   if(InnerAreas){

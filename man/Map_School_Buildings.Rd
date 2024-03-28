@@ -18,6 +18,7 @@ Map_School_Buildings(
   main = "",
   verbose = TRUE,
   input_shp = NULL,
+  autoAbort = FALSE,
   ...
 )
 }
@@ -54,6 +55,8 @@ The header is located on the top if \code{"top"} is given as input, and above th
 
 \item{input_shp}{Object of class \code{sf}, \code{tbl_df}, \code{tbl}, \code{data.frame}. The relevant shapefiles of Italian administrative boudaries,
 at the selected level of detail (LAU or NUTS-3). If \code{NULL} it is downloaded automatically but not saved in the global environment. \code{NULL} by default.}
+
+\item{autoAbort}{Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.}
 
 \item{...}{If \code{data} is not provided, the arguments to \code{\link{Group_DB_MIUR}}.}
 }

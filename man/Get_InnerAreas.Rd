@@ -7,7 +7,10 @@
 <https://www.istat.it/it/archivio/273176>
 }
 \usage{
-Get_InnerAreas()
+Get_InnerAreas(autoAbort = FALSE)
+}
+\arguments{
+\item{autoAbort}{Logical. Whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.}
 }
 \value{
 An object of class \code{tbl_df}, \code{tbl} and \code{data.frame}.
@@ -36,7 +39,7 @@ For more information regarding the dataset, it is possible to check the ISTAT me
 \examples{
 
 
-InnerAreas <- Get_InnerAreas()
+InnerAreas <- Get_InnerAreas(autoAbort = TRUE)
 
 InnerAreas[, c(1,9,13)]
 

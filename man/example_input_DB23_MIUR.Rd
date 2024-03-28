@@ -56,7 +56,8 @@ example_input_DB23_MIUR
 }
 \description{
 This dataframe includes the schools directly identifiable as primary, middle or high school, from four regions: Molise, Campania, Apulia and Basilicata.
-Only the first 35 columns are included.
+Only the first 35 columns are included. Some strings including accents in fields \code{Other_disturbances_proximity},
+\code{Other_specific_criticalities} and \code{Other} have been forced to ASCII.
 The whole dataset can be retrieved with the command \code{Get_DB_MIUR(2023)}
 }
 \seealso{

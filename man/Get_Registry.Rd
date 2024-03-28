@@ -10,7 +10,8 @@
 Get_Registry(
   Year = 2023,
   filename = c("SCUANAGRAFESTAT", "SCUANAAUTSTAT"),
-  show_col_types = FALSE
+  show_col_types = FALSE,
+  autoAbort = FALSE
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ If instead the registry of the private schools is needed, please insert \code{"S
 For the registry of private schools, either in all the national territory except for the aforementioned provinces, and for these provinces, please use \code{"SCUANAGRAFEPAR"} and \code{"SCUANAAUTPAR"} respectively. Please notice that data regarding private schools are not available for most functions in this package.}
 
 \item{show_col_types}{Logical. If \code{TRUE}, the columns of the raw dataset are shown during the download. \code{FALSE} by default.}
+
+\item{autoAbort}{Logical. Whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.}
 }
 \value{
 An object of class \code{tbl_df}, \code{tbl} and \code{data.frame}.
@@ -43,7 +46,7 @@ Schools different from primary, middle or high schools are classified as \code{"
 \examples{
 
 \donttest{
-  Get_Registry(2024, filename = "SCUANAGRAFESTAT")
+  Get_Registry(2024, filename = "SCUANAGRAFESTAT", autoAbort = TRUE)
 }
 
 

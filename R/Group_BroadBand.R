@@ -1,9 +1,8 @@
 #' @keywords internal
 #'
-Group_BroadBand <- function(Date = Sys.Date(), verbose=TRUE, input_BroadBand = NULL){
+Group_BroadBand <- function(Date = Sys.Date(), verbose=TRUE, input_BroadBand = NULL, autoAbort = FALSE){
   if(is.null(input_BroadBand)){
-    if(!Check_connection()) return(NULL)
-    input_BroadBand <- Get_BroadBand(Date = Date, verbose = verbose)
+    input_BroadBand <- Get_BroadBand(Date = Date, verbose = verbose, autoAbort = autoAbort)
   }
   if(is.null(input_BroadBand)) return(NULL)
   input_BroadBand <- input_BroadBand %>% dplyr::mutate(

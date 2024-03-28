@@ -12,6 +12,7 @@
 #' @param Year Numeric or character. Reference school year (last available is 2024).
 #' Available in the formats: \code{2023}, \code{"2022/2023"}, \code{202223}, \code{20222023}. \code{2023} by default.
 #' @param show_col_types Logical. If \code{TRUE}, the columns of the raw dataset are shown during the download. \code{FALSE} by default.
+#' @param autoAbort Logical. Whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #' @param filename Character. A string included in the name of the file to download, identifying the schools included.
 #' By default it is \code{c("SCUANAGRAFESTAT", "SCUANAAUTSTAT")}, i.e. the file names used for public school registries,
 #' respectively across all the national territory except for the autonomous provinces of Aosta, Trento or Bozen, and only in the three
@@ -27,7 +28,7 @@
 #' @examples
 #'
 #' \donttest{
-#'   Get_Registry(2024, filename = "SCUANAGRAFESTAT")
+#'   Get_Registry(2024, filename = "SCUANAGRAFESTAT", autoAbort = TRUE)
 #' }
 #'
 #'
@@ -37,12 +38,25 @@
 
 
 
-Get_Registry <- function(Year = 2023, filename = c("SCUANAGRAFESTAT", "SCUANAAUTSTAT"), show_col_types = FALSE){
+Get_Registry <- function(Year = 2023, filename = c("SCUANAGRAFESTAT", "SCUANAAUTSTAT"),
+                         show_col_types = FALSE, autoAbort = FALSE){
 
-  if(!Check_connection()) return(NULL)
+  if(!Check_connection(autoAbort)) return(NULL)
 
   home.url <-"https://dati.istruzione.it/opendata/opendata/catalogo/elements1/?area=Scuole"
-  homepage <- xml2::read_html(home.url)
+  homepage <- NULL
+  attempt <- 0
+  while(is.null(homepage) && attempt <= 10){
+    homepage <- tryCatch({
+      xml2::read_html(home.url)
+    }, error = function(e){
+      message("Cannot read the html; ", 10 - attempt,
+              " attempts left. If the problem persists, please contact the mantainer.\n")
+      return(NULL)
+    })
+    attempt <- attempt + 1
+  }
+  if(is.null(homepage)) return(NULL)
   name_pattern2 <- "([0-9]+)\\.(csv)$"
   links <- homepage %>% rvest::html_nodes("a") %>% rvest::html_attr("href") %>% unique()
 
@@ -84,8 +98,16 @@ Get_Registry <- function(Year = 2023, filename = c("SCUANAGRAFESTAT", "SCUANAAUT
     while(status != 200){
       base.url <- dirname(home.url)
       file.url <- file.path(base.url, file_to_download)
-      response <- httr::GET(file.url)
+      response <- tryCatch({
+        httr::GET(file.url)
+      }, error = function(e) {
+        message("Error occurred during scraping, attempt repeated ... \n")
+        NULL
+      })
       status <- response$status_code
+      if(is.null(response)){
+        status <- 0
+      }
       if(status != 200){
         message("Operation exited with status: ", status, "; operation repeated")
       }

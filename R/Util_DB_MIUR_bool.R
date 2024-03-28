@@ -17,6 +17,7 @@
 #' If a variable as a higher number of missing observations, then it is cut out. \code{1000} by default.
 #' @param verbose Logical. If \code{TRUE}, the user keeps track of the main underlying operations. TRUE by default.
 #' @param track_deleted Logical. If \code{TRUE}, the function returns the names of the school not included in the output dataframe. \code{TRUE} by default.
+#' @param autoAbort Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #'
 #'
 #' @return If \code{track_deleted == TRUE}, An object of class \code{list} including two objects:
@@ -34,7 +35,7 @@
 #'
 #'
 #'
-#'
+# library(magrittr)
 # input_DB23_MIUR <- Get_DB_MIUR(2023, verbose = FALSE)
 # DB23_MIUR_Bool <- input_DB23_MIUR %>% SchoolDataIT:::Util_DB_MIUR_bool(track_deleted = FALSE)
 # DB23_MIUR[,-c(1,4,6,9)]
@@ -46,7 +47,7 @@
 
 
 Util_DB_MIUR_bool <- function(data = NULL, cutout = NULL, col_cut_thresh = 10^3,
-                              verbose = TRUE, track_deleted = TRUE, ...){
+                              verbose = TRUE, track_deleted = TRUE, autoAbort = autoAbort, ...){
 
   starttime <- Sys.time()
 
@@ -54,7 +55,7 @@ Util_DB_MIUR_bool <- function(data = NULL, cutout = NULL, col_cut_thresh = 10^3,
   pattern.out = c("NON DEFINITO","-", "Informazione assente", "Non Comunicato", "ND", "Non richiesto", "NA")
 
   while(is.null(data)){
-    data <- Get_DB_MIUR(...)
+    data <- Get_DB_MIUR(autoAbort = autoAbort, verbose = verbose, ...)
     if(is.null(data)){
       holdOn <- ""
       message("Error during school buildings DB retrieving. Would you abort the whole operation or retry?",

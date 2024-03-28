@@ -35,6 +35,7 @@
 #' \code{NULL} by default
 #' @param input_shp Object of class \code{sf}, \code{tbl_df}, \code{tbl}, \code{data.frame}. The relevant shapefiles of Italian administrative boudaries,
 #' at the selected level of detail (LAU or NUTS-3). If \code{NULL}, it is downloaded automatically but not saved in the global environment. \code{NULL} by default.
+#' @param autoAbort Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #'
 #'
 #'
@@ -61,7 +62,7 @@
 Map_Invalsi <- function(Year = 2023, data = NULL, subj_toplot = "ITA", grade = 8, level = "LAU",
                         main = "", main_pos = "top", region_code = c(1:20), plot="mapview", pal = "Blues",
                         WLE = FALSE, col.rev = FALSE, popup_height = 200, verbose = TRUE,
-                        input_shp = NULL){
+                        input_shp = NULL, autoAbort = FALSE){
 
   if (length(subj_toplot) > 1){
     warning("Only one subject can be selected for mapping. The first one will be plotted")
@@ -76,38 +77,42 @@ Map_Invalsi <- function(Year = 2023, data = NULL, subj_toplot = "ITA", grade = 8
   }
 
   while(is.null(data)){
-    data <- Get_Invalsi_IS(level = level, verbose = verbose)
+    data <- Get_Invalsi_IS(level = level, verbose = verbose, autoAbort = autoAbort)
     if(is.null(data)){
-      holdOn <- ""
-      message("Error during Invalsi data retrieving. Would you abort the whole operation or retry?",
-              "    - To abort the operation, press `A` \n",
-              "    - To retry data retrieving, press any other key \n")
-      holdOn <- readline(prompt = "    ")
-      if(toupper(holdOn) == "A"){
-        cat("You chose to abort the operation \n")
-        return(NULL)
-      } else {
-        cat("You chose to retry \n")
-      }
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during Invalsi data retrieving. Would you abort the whole operation or retry?",
+                "    - To abort the operation, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          return(NULL)
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else return(NULL)
     }
   }
 
   while(is.null(input_shp)){
     YearMinus1 <- as.numeric(year.patternA(Year))%/%100
     input_shp <- Get_Shapefile(Year =
-      ifelse(year.patternA(Year)=="201819", Year, YearMinus1), level = level)
+      ifelse(year.patternA(Year)=="201819", Year, YearMinus1), level = level, autoAbort = autoAbort)
     if(is.null(input_shp)){
-      holdOn <- ""
-      message("Error during shapefile retrieving. Would you abort the whole operation or retry?",
-              "    - To abort the operation, press `A` \n",
-              "    - To retry data retrieving, press any other key \n")
-      holdOn <- readline(prompt = "    ")
-      if(toupper(holdOn) == "A"){
-        cat("You chose to abort the operation \n")
-        return(NULL)
-      } else {
-        cat("You chose to retry \n")
-      }
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during shapefile retrieving. Would you abort the whole operation or retry?",
+                "    - To abort the operation, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          return(NULL)
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else return(NULL)
     }
   }
 

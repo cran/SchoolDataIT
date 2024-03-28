@@ -15,6 +15,7 @@ Group_DB_MIUR(
   InnerAreas = TRUE,
   ord_InnerAreas = FALSE,
   input_InnerAreas = NULL,
+  autoAbort = FALSE,
   ...
 )
 }
@@ -46,6 +47,8 @@ False by default.}
 The classification of peripheral municipalities, needed only if \code{InnerAreas == TRUE}, obtained as output of the \code{\link{Get_InnerAreas}} function.
 If \code{NULL}, it will be downloaded automatically, but not saved in the global environment.
 \code{NULL} by default}
+
+\item{autoAbort}{Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.}
 
 \item{...}{Additional arguments to the function \code{Util_DB_MIUR_num} in case no data are provided or data.}
 }
@@ -85,9 +88,10 @@ DB23_MIUR <- example_input_DB23_MIUR \%>\% Util_DB_MIUR_num(verbose = FALSE) \%>
 
 
 DB23_MIUR$Municipality_data[, -c(1,2,4)]
+summary(DB23_MIUR$Municipality_data)
 
 DB23_MIUR$Province_data[, -c(1,3)]
-
+summary(DB23_MIUR$Province_data)
 
 
 

@@ -14,7 +14,8 @@
 #' @param UB_nstud_byclass Numeric. The upper limit of the acceptable school-level average of the number of students by class. If a school has, on average, a higher number of students by class, the record is considered an outlier and filtered out. \code{99} by default, i.e. no restriction is made. Please notice that boundaries are included in the acceptance interval.
 #' @param LB_nstud_byclass Numeric. The lower limit of the acceptable school-level average of the number of students by class. If a school has, on average, a smaller number of students by class, the record is considered an outlier and filtered out. \code{1} by default. Please notice that boundaries are included in the acceptance interval.
 #' @param verbose Logical. If \code{TRUE}, the user keeps track of the main underlying operations. \code{TRUE} by default.
-#' @param ... Ellipsis. Arguments to \code{\link{Get_nstud}}, needed if \code{data} is not provided.
+#' @param autoAbort Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
+#' @param ... Arguments to \code{\link{Get_nstud}}, needed if \code{data} is not provided.
 #'
 #'
 #'
@@ -36,6 +37,10 @@
 #' nrow(nstud.default)
 #' nrow(nstud.narrow)
 #'
+#' nstud.default
+#'
+#' summary(nstud.default)
+#'
 #'
 #' @export
 
@@ -43,7 +48,7 @@
 Util_nstud_wide <- function(data = NULL, missing_to_1 = FALSE,
                             nstud_imputation_thresh = 19,
                             UB_nstud_byclass = 99, LB_nstud_byclass = 1,
-                            verbose = TRUE, ...){
+                            verbose = TRUE, autoAbort = FALSE, ...){
 
   options(dplyr.summarise.inform = FALSE)
 
@@ -54,19 +59,21 @@ Util_nstud_wide <- function(data = NULL, missing_to_1 = FALSE,
     } else {
       filename <- "ALUCORSOINDCLASTA"
     }
-    data  <- Get_nstud(filename = filename, verbose = verbose, ...)
+    data  <- Get_nstud(filename = filename, verbose = verbose, autoAbort = autoAbort, ...)
     if(is.null(data)){
-      holdOn <- ""
-      message("Error during students counts retrieving. Would you abort the whole operation or retry?",
-              "    - To abort the operation, press `A` \n",
-              "    - To retry data retrieving, press any other key \n")
-      holdOn <- readline(prompt = "    ")
-      if(toupper(holdOn) == "A"){
-        cat("You chose to abort the operation \n")
-        return(NULL)
-      } else {
-        cat("You chose to retry \n")
-      }
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during students counts retrieving. Would you abort the whole operation or retry?",
+                "    - To abort the operation, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          return(NULL)
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else return(NULL)
     }
   }
 

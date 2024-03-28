@@ -19,7 +19,8 @@ Map_Invalsi(
   col.rev = FALSE,
   popup_height = 200,
   verbose = TRUE,
-  input_shp = NULL
+  input_shp = NULL,
+  autoAbort = FALSE
 )
 }
 \arguments{
@@ -64,6 +65,8 @@ By default, \code{c(1,3,5:20)}, i.e. all Italian regions except the provinces of
 
 \item{input_shp}{Object of class \code{sf}, \code{tbl_df}, \code{tbl}, \code{data.frame}. The relevant shapefiles of Italian administrative boudaries,
 at the selected level of detail (LAU or NUTS-3). If \code{NULL}, it is downloaded automatically but not saved in the global environment. \code{NULL} by default.}
+
+\item{autoAbort}{Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.}
 }
 \value{
 If \code{plot == "mapview"}, an object of class \code{mapview}. Otherwise, if \code{plot == "ggplot"}, an object of class \code{gg} and \code{ggplot}.

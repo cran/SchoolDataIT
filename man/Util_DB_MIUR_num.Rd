@@ -13,6 +13,7 @@ Util_DB_MIUR_num(
   verbose = TRUE,
   col_cut_thresh = 20000,
   flag_outliers = TRUE,
+  autoAbort = FALSE,
   ...
 )
 }
@@ -35,6 +36,8 @@ If a variable as a higher number of missing observations, then it is cut out. \c
 Warning: if the option \code{row_cutout} is active, please select a lower threshold (e.g. \code{1000})}
 
 \item{flag_outliers}{Logical. Whether to assign NA to outliers in numeric variables. \code{TRUE} by default.}
+
+\item{autoAbort}{Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.}
 
 \item{...}{Additional arguments to the function \code{Get_DB_MIUR} if \code{data} is not provided.}
 }
@@ -64,7 +67,7 @@ DB23_MIUR_num <- example_input_DB23_MIUR \%>\% Util_DB_MIUR_num(track_deleted = 
 
 
 DB23_MIUR_num[, -c(1,4,6,8,9,10)]
-
+summary(DB23_MIUR_num)
 
 
 }

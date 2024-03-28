@@ -50,19 +50,20 @@
 #' @param Date Character or Date. The threshold date to broadband activation to consider it activated for a school, i.e. the date before which the works of broadband activation must be finished in order to consider a school as provided with the broadband. By default, September 1st at the beginning of the school year.
 #' @param NA_autoRM Logical. Either \code{TRUE}, \code{FALSE} or \code{NULL}. If \code{TRUE}, the values missing in a single dataset are automatically deleted from the final DB. If \code{FALSE}, the missing observations are kept automatically. If \code{NULL}, the choice is left to the user by an interactive menu. \code{NULL} by default.
 #' @param verbose Logical. If \code{TRUE}, the user keeps track of the main underlying operations. \code{TRUE} by default.
+#' @param autoAbort Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #' @param show_col_types Logical. If \code{TRUE}, if the \code{verbose} argument is also \code{TRUE}, the columns of the raw dataset are shown during the download. \code{FALSE} by default.
 #' @param input_Invalsi_IS Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}.
 #' If \code{INVALSI == TRUE}, the raw Invalsi survey data, obtained as output of the \code{\link{Get_Invalsi_IS}} function.
 #' If \code{NULL}, it will be downloaded automatically, but not saved in the global environment.
 #' \code{NULL} by default
 #' @param input_Registry Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}.
-#' The school registry corresponding to the year in scope, obtained as output of the function \code{\link{Get_Registry}}
+#' The school registry corresponding to the year in scope, obtained as output of the function \code{\link{Get_Registry}}.
 #' If \code{NULL}, it will be downloaded automatically, but not saved in the global environment.
 #' \code{NULL} by default
-#' @param input_SchoolBuildings Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}. If \code{SchoolBuildings == TRUE}, the raw school buildings dataset obtained as output of the function \code{\link{Get_DB_MIUR}}
-#' If \code{NULL}, it will be downloaded automatically but not saved in the global environment. \code{NULL} by default
+#' @param input_SchoolBuildings Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}. If \code{SchoolBuildings == TRUE}, the raw school buildings dataset obtained as output of the function \code{\link{Get_DB_MIUR}}.
+#' If \code{NULL}, it will be downloaded automatically but not saved in the global environment. \code{NULL} by default.
 #' @param input_nstud Object of class \code{list}, including two objects of class\code{tbl_df}, \code{tbl} and \code{data.frame}.
-#' If \code{nstud == TRUE}, the number of students by class, obtained as output of the \code{\link{Get_nstud}} function with the default \code{filename} parameter.
+#' If \code{nstud == TRUE}, the students and classes counts, obtained as output of the function \code{\link{Get_nstud}} with default \code{filename} parameter.
 #' If \code{NULL}, the function will download it automatically but it will not be saved in the global environment. \code{NULL} by default.
 #' @param input_School2mun Object of class \code{list} with elements of class \code{tbl_df}, \code{tbl} and \code{data.frame}
 #' If \code{nstud == TRUE}, the mapping from school codes to municipality (and province) codes. Needed only if \code{check == TRUE}, obtained as output of the function \code{\link{Get_School2mun}}.
@@ -98,18 +99,20 @@
 #'
 #'
 #'
-#' x <- Set_DB(Year = 2023, level = "NUTS-3",
+#' DB23_prov <- Set_DB(Year = 2023, level = "NUTS-3",Invalsi_grade = c(5, 8, 13),
+#'       Invalsi_subj = "Italian",nteachers = FALSE, BroadBand = FALSE,
+#'       SchoolBuildings_count_missing = FALSE,NA_autoRM= TRUE,
 #'       input_SchoolBuildings = example_input_DB23_MIUR[, -c(11:18, 10:27)],
 #'       input_Invalsi_IS = example_Invalsi23_prov,
 #'       input_nstud = example_input_nstud23,
 #'       input_InnerAreas = example_InnerAreas,
 #'       input_School2mun = example_School2mun23,
-#'       input_AdmUnNames = example_AdmUnNames20220630,
-#'       nteachers = FALSE, BroadBand = FALSE, Invalsi_grade = c(5, 8, 13),
-#'       Invalsi_subj = "Italian",
-#'       SchoolBuildings_count_missing = FALSE,
-#'       NA_autoRM= TRUE)
-#' summary(x[, -c(22:62)])
+#'       input_AdmUnNames = example_AdmUnNames20220630)
+#'
+#'
+#' DB23_prov
+#'
+#' summary(DB23_prov[, -c(22:62)])
 #'
 #'
 #'
@@ -157,7 +160,8 @@ Set_DB <- function( Year = 2023,
                     input_teachers4student = NULL,
                     input_nteachers = NULL,
                     input_BroadBand = NULL,
-                    input_RiskMap = NULL ){
+                    input_RiskMap = NULL,
+                    autoAbort = FALSE){
 
   start.zero <- Sys.time()
   YearMinus1 <- as.numeric(substr(year.patternA(Year),1,4))
@@ -168,19 +172,21 @@ Set_DB <- function( Year = 2023,
      (SchoolBuildings && is.null(input_SchoolBuildings)) ||
      (nstud && is.null(input_nstud))){
     while(is.null(input_Registry)){
-      input_Registry <- Get_Registry(Year = Year, show_col_types = show_col_types)
+      input_Registry <- Get_Registry(Year = Year, show_col_types = show_col_types, autoAbort = autoAbort)
       if(is.null(input_Registry)){
-        holdOn <- ""
-        message("Error during schools registry retrieving. Would you abort the whole operation or retry? \n",
-                "    - To abort the operation, press `A` \n",
-                "    - To retry data retrieving, press any other key \n")
-        holdOn <- readline(prompt = "    ")
-        if(toupper(holdOn) == "A"){
-          cat("You chose to abort the operation \n")
-          return(NULL)
-        } else {
-          cat("You chose to retry \n")
-        }
+        if(!autoAbort){
+          holdOn <- ""
+          message("Error during schools registry retrieving. Would you abort the whole operation or retry? \n",
+                  "    - To abort the operation, press `A` \n",
+                  "    - To retry data retrieving, press any other key \n")
+          holdOn <- readline(prompt = "    ")
+          if(toupper(holdOn) == "A"){
+            cat("You chose to abort the operation \n")
+            return(NULL)
+          } else {
+            cat("You chose to retry \n")
+          }
+        } else return(NULL)
       }
     }
   }
@@ -191,10 +197,34 @@ Set_DB <- function( Year = 2023,
         Year = ifelse(any(year.patternA(Year) %in% c(
           year.patternA(2016), year.patternA(2018))), Year, YearMinus1),
         date = ifelse(any(year.patternA(Year) %in%c(
-          year.patternA(2016), year.patternA(2018))), "01_01_", "30_06_"))
+          year.patternA(2016), year.patternA(2018))), "01_01_", "30_06_"), autoAbort = autoAbort)
       if(is.null(input_AdmUnNames)){
+        if(!autoAbort){
+          holdOn <- ""
+          message("Error during administrative codes retrieving. Would you abort the whole operation or retry? \n",
+                  "    - To abort the operation, press `A` \n",
+                  "    - To retry data retrieving, press any other key \n")
+          holdOn <- readline(prompt = "    ")
+          if(toupper(holdOn) == "A"){
+            cat("You chose to abort the operation \n")
+            return(NULL)
+          } else {
+            cat("You chose to retry \n")
+          }
+        } else return(NULL)
+      }
+    }
+  }
+
+  while(is.null(input_School2mun)){
+    input_School2mun <- Get_School2mun(
+      Year = Year, verbose = verbose, show_col_types = show_col_types,
+      input_Registry2 = input_Registry, input_AdmUnNames = input_AdmUnNames,
+      autoAbort = autoAbort)
+    if(is.null(input_School2mun)){
+      if(!autoAbort){
         holdOn <- ""
-        message("Error during administrative codes retrieving. Would you abort the whole operation or retry? \n",
+        message("Error during mapping schools to municipalities. Would you abort the whole operation or retry? \n",
                 "    - To abort the operation, press `A` \n",
                 "    - To retry data retrieving, press any other key \n")
         holdOn <- readline(prompt = "    ")
@@ -204,81 +234,70 @@ Set_DB <- function( Year = 2023,
         } else {
           cat("You chose to retry \n")
         }
-      }
-    }
-  }
-
-  while(is.null(input_School2mun)){
-    input_School2mun <- Get_School2mun(
-      Year = Year, verbose = verbose, show_col_types = show_col_types,
-      input_Registry2 = input_Registry, input_AdmUnNames = input_AdmUnNames)
-    if(is.null(input_School2mun)){
-      holdOn <- ""
-      message("Error during mapping schools to municipalities. Would you abort the whole operation or retry? \n",
-              "    - To abort the operation, press `A` \n",
-              "    - To retry data retrieving, press any other key \n")
-      holdOn <- readline(prompt = "    ")
-      if(toupper(holdOn) == "A"){
-        cat("You chose to abort the operation \n")
-        return(NULL)
-      } else {
-        cat("You chose to retry \n")
-      }
+      } else return(NULL)
     }
   }
 
   while(Invalsi && is.null(input_Invalsi_IS)){
-    input_Invalsi_IS <- Get_Invalsi_IS(level = level, verbose = verbose, show_col_types = show_col_types)
+    input_Invalsi_IS <- Get_Invalsi_IS(level = level, verbose = verbose,
+                                       show_col_types = show_col_types, autoAbort = autoAbort)
     if(is.null(input_Invalsi_IS)){
-      holdOn <- ""
-      message("Error during Invalsi data retrieving. Would you abort this element or retry? \n",
-              "    - To abort the element, press `A` \n",
-              "    - To retry data retrieving, press any other key \n")
-      holdOn <- readline(prompt = "    ")
-      if(toupper(holdOn) == "A"){
-        cat("You chose to abort the operation \n")
-        Invalsi <- FALSE
-      } else {
-        cat("You chose to retry \n")
-      }
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during Invalsi data retrieving. Would you abort this element or retry? \n",
+                "    - To abort the element, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          Invalsi <- FALSE
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else Invalsi <- FALSE
     }
   }
 
   while(SchoolBuildings && is.null(input_SchoolBuildings)){
     input_SchoolBuildings <-
       Get_DB_MIUR(Year = Year, verbose = verbose, show_col_types = show_col_types,
-                  input_Registry = input_Registry, input_AdmUnNames = input_AdmUnNames)
+                  input_Registry = input_Registry, input_AdmUnNames = input_AdmUnNames,
+                  autoAbort = autoAbort)
 
     if(is.null(input_SchoolBuildings)){
-      holdOn <- ""
-      message("Error during school buildings DB retrieving. Would you abort this element or retry? \n",
-              "    - To abort the element, press `A` \n",
-              "    - To retry data retrieving, press any other key \n")
-      holdOn <- readline(prompt = "    ")
-      if(toupper(holdOn) == "A"){
-        cat("You chose to abort the operation \n")
-        SchoolBuildings <- FALSE
-      } else {
-        cat("You chose to retry \n")
-      }
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during school buildings DB retrieving. Would you abort this element or retry? \n",
+                "    - To abort the element, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          SchoolBuildings <- FALSE
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else SchoolBuildings <- FALSE
     }
     if(verbose) cat("\n")
   }
 
   while(InnerAreas && is.null(input_InnerAreas)){
-    input_InnerAreas <- Get_InnerAreas()
+    input_InnerAreas <- Get_InnerAreas(autoAbort)
     if(is.null(input_InnerAreas)){
-      holdOn <- ""
-      message("Error during inner areas classification retrieving. Would you abort this element or retry? \n",
-              "    - To abort the element, press `A` \n",
-              "    - To retry data retrieving, press any other key \n")
-      holdOn <- readline(prompt = "    ")
-      if(toupper(holdOn) == "A"){
-        cat("You chose to abort the element \n")
-        InnerAreas <- FALSE
-      } else {
-        cat("You chose to retry \n")
-      }
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during inner areas classification retrieving. Would you abort this element or retry? \n",
+                "    - To abort the element, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the element \n")
+          InnerAreas <- FALSE
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else InnerAreas <- FALSE
     }
   }
 
@@ -288,71 +307,79 @@ Set_DB <- function( Year = 2023,
     } else {
       nstud_filename <- "ALUCORSOINDCLASTA"
     }
-    input_nstud <- Get_nstud(Year = Year, verbose = verbose, filename = nstud_filename)
+    input_nstud <- Get_nstud(Year = Year, verbose = verbose, filename = nstud_filename, autoAbort = autoAbort)
     if(is.null(input_nstud)){
-      holdOn <- ""
-      message("Error during students counts retrieving. Would you abort this element or retry? \n",
-              "    - To abort the element, press `A` \n",
-              "    - To retry data retrieving, press any other key \n")
-      holdOn <- readline(prompt = "    ")
-      if(toupper(holdOn) == "A"){
-        cat("You chose to abort the operation \n")
-        nstud <- FALSE
-      } else {
-        cat("You chose to retry \n")
-      }
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during students counts retrieving. Would you abort this element or retry? \n",
+                "    - To abort the element, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          nstud <- FALSE
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else nstud <- FALSE
     }
   }
 
   while(nteachers && is.null(input_nteachers)){
-    input_nteachers <- Get_nteachers_prov(
-      Year = Year, verbose = verbose, show_col_types = show_col_types)
+    input_nteachers <- Get_nteachers_prov(Year = Year, verbose = verbose,
+                                          show_col_types = show_col_types, autoAbort = autoAbort)
     if(is.null(input_nteachers)){
-      holdOn <- ""
-      message("Error during teachers counts retrieving. Would you abort this element or retry? \n",
-              "    - To abort the element, press `A` \n",
-              "    - To retry data retrieving, press any other key \n")
-      holdOn <- readline(prompt = "    ")
-      if(toupper(holdOn) == "A"){
-        cat("You chose to abort the element \n")
-        nteachers <- FALSE
-      } else {
-        cat("You chose to retry \n")
-      }
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during teachers counts retrieving. Would you abort this element or retry? \n",
+                "    - To abort the element, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the element \n")
+          nteachers <- FALSE
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else nteachers <- FALSE
     }
   }
 
   while(BroadBand && is.null(input_BroadBand)){
-    input_BroadBand <- Get_BroadBand(verbose = verbose, Date = Date)
+    input_BroadBand <- Get_BroadBand(verbose = verbose, Date = Date, autoAbort = autoAbort)
     if(is.null(input_BroadBand)){
-      holdOn <- ""
-      message("Error during broadband data retrieving. Would you abort this element or retry? \n",
-              "    - To abort the element, press `A` \n",
-              "    - To retry data retrieving, press any other key \n")
-      holdOn <- readline(prompt = "    ")
-      if(toupper(holdOn) == "A"){
-        cat("You chose to abort the operation \n")
-        BroadBand <- FALSE
-      } else {
-        cat("You chose to retry \n")
-      }
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during broadband data retrieving. Would you abort this element or retry? \n",
+                "    - To abort the element, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          BroadBand <- FALSE
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else BroadBand <- FALSE
     }
   }
 
   while(RiskMap && is.null(input_RiskMap) && level %in% c("LAU", "Municipality")){
-    input_RiskMap <- Get_RiskMap(verbose = verbose, metadata = FALSE)
+    input_RiskMap <- Get_RiskMap(verbose = verbose, metadata = FALSE, autoAbort = autoAbort)
     if(is.null(input_RiskMap)){
-      holdOn <- ""
-      message("Error during risk map retrieving. Would you abort this element or retry? \n",
-              "    - To abort the element, press `A` \n",
-              "    - To retry data retrieving, press any other key \n")
-      holdOn <- readline(prompt = "    ")
-      if(toupper(holdOn) == "A"){
-        cat("You chose to abort the operation \n")
-        RiskMap <- FALSE
-      } else {
-        cat("You chose to retry \n")
-      }
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during risk map retrieving. Would you abort this element or retry? \n",
+                "    - To abort the element, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          RiskMap <- FALSE
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else RiskMap <- FALSE
     }
   }
 

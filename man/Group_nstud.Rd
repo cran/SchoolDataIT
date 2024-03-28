@@ -19,6 +19,7 @@ Group_nstud(
   input_Prov_shp = NULL,
   input_School2mun = NULL,
   input_AdmUnNames = NULL,
+  autoAbort = FALSE,
   ...
 )
 }
@@ -68,6 +69,8 @@ The ISTAT file including all the codes and the names of the administrative units
 Only needed if \code{check == TRUE} and the argument \code{input_School2mun} is \code{NULL}.
 If \code{NULL}, it will be downloaded automatically, but not saved in the global environment. \code{NULL} by default.}
 
+\item{autoAbort}{Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.}
+
 \item{...}{Additional arguments to the function \code{\link{Util_nstud_wide}} if \code{data} is not provided.}
 }
 \value{
@@ -90,12 +93,13 @@ Qualitative values, if included, are summarised by the mode. Summary measures do
 \examples{
 Year <- 2023
 
-Group_nstud(data = example_input_nstud23, Year = Year,
-            input_Registry2 = example_input_Registry23,
-            InnerAreas = FALSE,  input_School2mun = example_School2mun23)
+nstud23_aggr <- Group_nstud(data = example_input_nstud23, Year = Year,
+                           input_Registry2 = example_input_Registry23,
+                           InnerAreas = FALSE,  input_School2mun = example_School2mun23)
 
+summary(nstud23_aggr$Municipality_data[,c(46,47,48)])
 
-
+summary(nstud23_aggr$Province_data[,c(44,45,46)])
 
 
 }

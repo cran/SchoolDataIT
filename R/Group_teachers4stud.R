@@ -14,6 +14,7 @@
 #' @param nteachers_filename Character. If \code{input_nteachers} is not provided, which data to retrieve regarding the number of teachers/personnel; see \code{\link{Get_nteachers_prov}}
 #'  \code{c("DOCTIT", "DOCSUP")} by default, i.e. tenured theachers and temporary teachers.
 #' @param verbose Logical. If \code{TRUE}, the user keeps track of the main underlying operations. TRUE by default.
+#' @param autoAbort Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #' @param ... Arguments to \code{\link{Group_nstud}} if argument \code{input_nstud_aggr} is not provided
 #'
 #'
@@ -28,19 +29,24 @@
 #'
 #'
 #' \donttest{
-#'   input_nstud23 <- Get_nstud(2023, filename ="ALUCORSOINDCLASTA")
-#'   Registry23 <- Get_Registry(2023)
-#'   School2mun23 <- Get_School2mun(2023, input_Registry = Registry23)
+#'   input_nstud23 <- Get_nstud(2023, filename ="ALUCORSOINDCLASTA", autoAbort = TRUE)
+#'   Registry23 <- Get_Registry(2023, autoAbort = TRUE)
+#'   School2mun23 <- Get_School2mun(2023, input_Registry = Registry23, autoAbort = TRUE)
 #'
 #'
 #'   nstud23.aggr <- Group_nstud(Year = 2023, data = input_nstud23,
-#'     input_Registry2 = Registry23, input_School2mun = School2mun23)
+#'     input_Registry2 = Registry23, input_School2mun = School2mun23,
+#'     autoAbort = TRUE)
 #'
-#'   input_nteachers23 <- Get_nteachers_prov(2023)
+#'   input_nteachers23 <- Get_nteachers_prov(2023, autoAbort = TRUE)
 #'
-#'   Group_teachers4stud(Year = 2023, input_nteachers = input_nteachers23,
-#'     input_nstud_aggr = nstud23.aggr)[, -c(1, 2, 10, 11)]
+#'   teachers4stud <- Group_teachers4stud(Year = 2023,
+#'                    input_nteachers = input_nteachers23,
+#'                    input_nstud_aggr = nstud23.aggr, autoAbort = TRUE)
 #'
+#'   teachers4stud[, -c(1, 2, 10, 11)]
+#'
+#'   summary(teachers4stud)
 #'}
 #'
 #' @export
@@ -50,23 +56,26 @@
 Group_teachers4stud <- function(Year = 2023, input_nteachers = NULL,
                                 nteachers_filename = c("DOCTIT", "DOCSUP"),
                                 verbose = TRUE,input_nstud_raw = NULL,
-                                input_nstud_aggr = NULL, ...){
+                                input_nstud_aggr = NULL, autoAbort = FALSE, ...){
 
   while(is.null(input_nteachers)){
     if(verbose) cat("Retrieving number of teachers by province")
-    input_nteachers <- Get_nteachers_prov(Year = Year, verbose = verbose, filename = nteachers_filename)
+    input_nteachers <- Get_nteachers_prov(Year = Year, verbose = verbose,
+                                          filename = nteachers_filename, autoAbort = autoAbort)
     if(is.null(input_nteachers)){
-      holdOn <- ""
-      message("Error during teachers counts retrieving. Would you abort the whole operation or retry?",
-              "    - To abort the operation, press `A` \n",
-              "    - To retry data retrieving, press any other key \n")
-      holdOn <- readline(prompt = "    ")
-      if(toupper(holdOn) == "A"){
-        cat("You chose to abort the operation \n")
-        return(NULL)
-      } else {
-        cat("You chose to retry \n")
-      }
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during teachers counts retrieving. Would you abort the whole operation or retry?",
+                "    - To abort the operation, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          return(NULL)
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else return(NULL)
     }
   }
 
@@ -75,19 +84,21 @@ Group_teachers4stud <- function(Year = 2023, input_nteachers = NULL,
       cat("Retrieving and aggregating number of students by province \n" )} else {
         cat("Aggregating number of students by province \n")
       }
-    input_nstud_aggr <- Group_nstud(Year = Year, data = input_nstud_raw, ...)
+    input_nstud_aggr <- Group_nstud(Year = Year, data = input_nstud_raw, autoAbort = autoAbort, ...)
     if(is.null(input_nstud_aggr)){
-      holdOn <- ""
-      message("Error during students counts processing Would you abort the whole operation or retry?",
-              "    - To abort the operation, press `A` \n",
-              "    - To retry data retrieving, press any other key \n")
-      holdOn <- readline(prompt = "    ")
-      if(toupper(holdOn) == "A"){
-        cat("You chose to abort the operation \n")
-        return(NULL)
-      } else {
-        cat("You chose to retry \n")
-      }
+      if(!autoAbort){
+        holdOn <- ""
+        message("Error during students counts processing Would you abort the whole operation or retry?",
+                "    - To abort the operation, press `A` \n",
+                "    - To retry data retrieving, press any other key \n")
+        holdOn <- readline(prompt = "    ")
+        if(toupper(holdOn) == "A"){
+          cat("You chose to abort the operation \n")
+          return(NULL)
+        } else {
+          cat("You chose to retry \n")
+        }
+      } else return(NULL)
     }
   }
 

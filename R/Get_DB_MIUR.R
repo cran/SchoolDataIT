@@ -17,6 +17,7 @@
 #' Only  necessary for school years 2015/16, 2017/18 and 2018/19.
 #' If \code{NULL} and required, it will be downloaded automatically but not saved in the global environment. \code{NULL} by default.
 #' @param verbose Logical. If \code{TRUE}, the user keeps track of the main underlying operations. \code{TRUE} by default.
+#' @param autoAbort Logical. Whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.
 #' @param show_col_types Logical. If \code{TRUE}, if the \code{verbose} argument is also \code{TRUE}, the columns of the raw dataset are shown during the download. \code{FALSE} by default.
 #'
 #'
@@ -31,9 +32,10 @@
 #' @examples
 #'
 #' \donttest{
-#'   input_DB23_MIUR <- Get_DB_MIUR(2023)
+#'   input_DB23_MIUR <- Get_DB_MIUR(2023, autoAbort = TRUE)
 #'
 #'   input_DB23_MIUR[-c(1,4,6,9)]
+#'
 #' }
 #'
 #'
@@ -41,15 +43,27 @@
 
 
 Get_DB_MIUR <- function(Year = 2023, verbose = TRUE, input_Registry = NULL,
-                        input_AdmUnNames = NULL, show_col_types = FALSE){
+                        input_AdmUnNames = NULL, show_col_types = FALSE, autoAbort = FALSE){
 
   start.zero <- Sys.time()
 
-  if(!Check_connection()) return(NULL)
+  if(!Check_connection(autoAbort)) return(NULL)
 
   # Link retrieving
   home.url <-"https://dati.istruzione.it/opendata/opendata/catalogo/elements1/?area=Edilizia%20Scolastica"
-  homepage <- xml2::read_html(home.url)
+  homepage <- NULL
+  attempt <- 0
+  while(is.null(homepage) && attempt <= 10){
+    homepage <- tryCatch({
+      xml2::read_html(home.url)
+    }, error = function(e){
+      message("Cannot read the html; ", 10 - attempt,
+              " attempts left. If the problem persists, please contact the mantainer.\n")
+      return(NULL)
+    })
+    attempt <- attempt + 1
+  }
+  if(is.null(homepage)) return(NULL)
   name_pattern <- "([0-9]+)\\.(csv)$"
   pattern <- year.patternB(Year)
   links <- homepage %>% rvest::html_nodes("a") %>% rvest::html_attr("href") %>% unique()
@@ -82,8 +96,16 @@ Get_DB_MIUR <- function(Year = 2023, verbose = TRUE, input_Registry = NULL,
     file.url <- file.path(base.url, link)
     status <- 0
     while(status != 200){
-      response <- httr::GET(file.url)
+      response <- tryCatch({
+        httr::GET(file.url)
+      }, error = function(e) {
+        message("Error occurred during scraping, attempt repeated ... \n")
+        NULL
+      })
       status <- response$status_code
+      if(is.null(response)){
+        status <- 0
+      }
       if(status != 200){
         message("Operation exited with status: ", status, "; operation repeated")
       }
@@ -164,7 +186,8 @@ Get_DB_MIUR <- function(Year = 2023, verbose = TRUE, input_Registry = NULL,
       cat("Mapping cadastral codes to municipality (LAU) codes:")
       input_AdmUnNames <- Get_AdmUnNames(
         Year = ifelse(any(pattern %in% c(year.patternB(2016), year.patternB(2018))), Year, YearMinus1),
-        date = ifelse(any(pattern %in% c(year.patternB(2016), year.patternB(2018))), "01_01_", "30_06_"))
+        date = ifelse(any(pattern %in% c(year.patternB(2016), year.patternB(2018))), "01_01_", "30_06_"),
+        autoAbort = autoAbort)
     }
     CodMun.R <- input_AdmUnNames %>% dplyr::select(.data$Cadastral_code, .data$Municipality_code)
 
@@ -175,7 +198,7 @@ Get_DB_MIUR <- function(Year = 2023, verbose = TRUE, input_Registry = NULL,
       fixMun.manual(Year)
   }
 
-  if (is.null(input_Registry)) input_Registry <- Get_Registry(Year)
+  if (is.null(input_Registry)) input_Registry <- Get_Registry(Year = Year, autoAbort = autoAbort)
 
   left <- input_Registry[,c(1,6,5)] %>% dplyr::filter(.data$School_code %in% DB_MIUR.R$School_code)
 

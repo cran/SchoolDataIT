@@ -18,6 +18,7 @@ Map_DB(
   main_pos = "top",
   main = "",
   order = NULL,
+  autoAbort = FALSE,
   ...
 )
 }
@@ -53,6 +54,8 @@ The header is located on the top if \code{"top"} is given as input, and above th
 
 \item{order}{Character. The educational level. Either \code{"Primary"} (primary school), \code{"Middle"} (middle school), or \code{"High"} (high school).
 If the data include the Invalsi census survey, please select a level consistent with the chosen educational grade. \code{"Media"} by default.}
+
+\item{autoAbort}{Logical. In case any data must be retrieved, whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.}
 
 \item{...}{Additional arguments for the input database, if not provided; see \code{\link{Set_DB}}}
 }
