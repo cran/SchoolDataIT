@@ -45,7 +45,7 @@
 #' @param UB_nstud_byclass Numeric. The upper limit of the acceptable school-level average of the number of students by class if \code{nstud == TRUE}; see also \code{\link{Util_nstud_wide}}.  \code{99} by default, i.e. no restriction is made. Please notice that boundaries are included in the acceptance interval.
 #' @param LB_nstud_byclass Numeric. The lower limit of the acceptable school-level average of the number of students by class if \code{nstud == TRUE}; see also \code{\link{Util_nstud_wide}}. \code{1} by default. Please notice that boundaries are included in the acceptance interval.
 #' @param nstud_check Logical. If \code{nstud == TRUE}, whether to check the students number availability across all school included in the school registries (see \code{\link{Util_Check_nstud_availability}}). \code{TRUE} by default.
-#' @param nstud_check_registry Character. If \code{nstud == TRUE} and \code{nstud_check == TRUE}, the school registries whose availability has to be checked. Either \code{"Registry1"} (buildings registry), \code{"Registry 2"} (proper registry), \code{"Any"} or \code{"Both"}. \code{"Any"} by default.
+#' @param nstud_check_registry Character. If \code{nstud == TRUE} and \code{nstud_check == TRUE}, the school registries whose availability has to be checked. Either \code{"Registry_from_buildings"} (buildings registry), \code{"Registry_from_registry"} (proper registry), \code{"Any"} or \code{"Both"}. \code{"Any"} by default.
 #' @param BroadBand_impute_missing Whether the schools not included in the Broadband dataset must be considered in the total of schools (i.e. the denominator to the Broadband availability indicator). \code{TRUE} by default.
 #' @param Date Character or Date. The threshold date to broadband activation to consider it activated for a school, i.e. the date before which the works of broadband activation must be finished in order to consider a school as provided with the broadband. By default, September 1st at the beginning of the school year.
 #' @param NA_autoRM Logical. Either \code{TRUE}, \code{FALSE} or \code{NULL}. If \code{TRUE}, the values missing in a single dataset are automatically deleted from the final DB. If \code{FALSE}, the missing observations are kept automatically. If \code{NULL}, the choice is left to the user by an interactive menu. \code{NULL} by default.
@@ -219,7 +219,7 @@ Set_DB <- function( Year = 2023,
   while(is.null(input_School2mun)){
     input_School2mun <- Get_School2mun(
       Year = Year, verbose = verbose, show_col_types = show_col_types,
-      input_Registry2 = input_Registry, input_AdmUnNames = input_AdmUnNames,
+      input_Registry = input_Registry, input_AdmUnNames = input_AdmUnNames,
       autoAbort = autoAbort)
     if(is.null(input_School2mun)){
       if(!autoAbort){
@@ -462,7 +462,7 @@ Set_DB <- function( Year = 2023,
                   LB_nstud_byclass = LB_nstud_byclass, check = nstud_check, verbose = verbose,
                   check_registry = nstud_check_registry, InnerAreas = nstud_InnerAreas,
                   ord_InnerAreas = nstud_ord_InnerAreas,
-                  input_Registry2 = input_Registry, input_InnerAreas = input_InnerAreas,
+                  input_Registry = input_Registry, input_InnerAreas = input_InnerAreas,
                   input_School2mun = input_School2mun, input_AdmUnNames = input_AdmUnNames)
     if(!is.data.frame(nstud_aggr)){
       if(level %in% c("LAU", "Municipality")){
@@ -478,7 +478,7 @@ Set_DB <- function( Year = 2023,
           Year = Year, input_nteachers = input_nteachers,
           verbose = verbose,
           input_nstud_aggr = nstud_aggr$Province_data,
-          input_Registry2 = input_Registry,
+          input_Registry = input_Registry,
           input_InnerAreas = input_InnerAreas,
           input_School2mun = input_School2mun)
       }
@@ -517,7 +517,7 @@ Set_DB <- function( Year = 2023,
     }
 
     BB <- Group_BroadBand(
-      Date = Date, verbose = verbose, input_BroadBand = input_BroadBand )
+      Date = Date, verbose = verbose, data = input_BroadBand )
     if(level %in% c("LAU", "Municipality")){
       datasets[["BroadBand"]] <- BB$Municipality_data %>%
         dplyr::select( -.data$Region_code, -.data$Region_description, -.data$nschools )
@@ -619,10 +619,11 @@ Set_DB <- function( Year = 2023,
 
   if(level %in% c("LAU", "Municipality")){
 
-    datasets[["Invalsi_IS"]] <- datasets[["Invalsi_IS"]] %>%
-      dplyr::mutate(Province_code = as.numeric(substr(.data$Municipality_code, 1, 3))) %>%
-      dplyr::relocate(.data$Province_code, .before = 1)
-
+    if(!is.null(datasets[["Invalsi_IS"]])){
+      datasets[["Invalsi_IS"]] <- datasets[["Invalsi_IS"]] %>%
+        dplyr::mutate(Province_code = as.numeric(substr(.data$Municipality_code, 1, 3))) %>%
+        dplyr::relocate(.data$Province_code, .before = 1)
+    }
 
     datasets[2:length(datasets)] <- datasets[2:length(datasets)] %>%
       lapply(function(x){
@@ -648,8 +649,8 @@ Set_DB <- function( Year = 2023,
     res <- datasets[[1]]
     remaining <- list()
     for(i in (2:length(datasets))){
+      ncol.old <- ncol(res)
       if("Municipality_code" %in% names(datasets[[i]])){
-        ncol.old <- ncol(res)
         if("Order" %in% names(datasets[[i]])){
           res <- res %>%
             dplyr::left_join(datasets[[i]],by = c("Municipality_code", "Order"))
@@ -736,7 +737,6 @@ Set_DB <- function( Year = 2023,
     datasets[["Registry"]] <- datasets[["Registry"]] %>%
       dplyr::distinct(.data$Province_code, .data$Province_initials, .data$Order)
 
-    #datasets.backup <- datasets
     datasets[2:length(datasets)] <- datasets[2:length(datasets)] %>%
       lapply(function(x){
         x <- x[,which(!names(x) %in% c(

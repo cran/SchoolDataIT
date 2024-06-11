@@ -84,7 +84,7 @@ Util_DB_MIUR_num <- function(data = NULL, include_numerics = TRUE, include_quali
   }
   nc <- ncol(data)
   #init.cutout = c("Address_type","Address_name","Civic_number", "Building_status")
-  pattern.out = c("NON DEFINITO","-", "Informazione assente", "Non Comunicato", "ND", "Non richiesto")
+  pattern.out = c("NON DEFINITO","-", "Informazione assente", "Non Comunicato", "ND", "Non richiesto", "IN PARTE")
 
   starttime <- Sys.time()
   if("Adaptation_year" %in% names(data)){
