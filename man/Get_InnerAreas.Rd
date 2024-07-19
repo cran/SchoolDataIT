@@ -4,12 +4,14 @@
 \alias{Get_InnerAreas}
 \title{Download the classification of peripheral municipalities}
 \source{
-<https://www.istat.it/it/archivio/273176>
+<https://www.istat.it/notizia/la-geografia-delle-aree-interne-nel-2020-vasti-territori-tra-potenzialita-e-debolezze/>
 }
 \usage{
-Get_InnerAreas(autoAbort = FALSE)
+Get_InnerAreas(verbose = TRUE, autoAbort = FALSE)
 }
 \arguments{
+\item{verbose}{Logical. Whether to keep track of computational time. \code{TRUE} by default.}
+
 \item{autoAbort}{Logical. Whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.}
 }
 \value{
@@ -38,9 +40,9 @@ For more information regarding the dataset, it is possible to check the ISTAT me
 }
 \examples{
 
-
+\donttest{
 InnerAreas <- Get_InnerAreas(autoAbort = TRUE)
-
 InnerAreas[, c(1,9,13)]
+}
 
 }
