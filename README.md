@@ -1,6 +1,4 @@
-# Version 0.2.0
-
-## Testing version, to be loaded on CRAN
+# Version 0.2.1
 
 ## Package overview
 

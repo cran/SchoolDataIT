@@ -17,7 +17,7 @@
 #' @param Year Numeric or Character. The relevant school year. Available in the formats: \code{2023}, \code{"2022/2023"}, \code{202223}, \code{20222023}.
 #' Important: if input datasets are plugged in, please select the same \code{Year} argument used to download the input data. \code{2023} by default.
 #' @param level Character. The administrative level of detail at which data must be aggregated.
-#' Either \code{"LAU"}/\code{"Municipality"} or \code{"NUTS-3"}/\code{"Province"}. \code{"LAU"} by default.
+#' Either \code{"LAU"}/\code{"Municipality"/"NUTS-4"} or \code{"NUTS-3"}/\code{"Province"}. \code{"LAU"} by default.
 #' @param conservative Logical. If \code{FALSE}, only the schools included in all the datasets are taken as input. \code{TRUE} by default.
 #' @param Invalsi Logical. Whether the Invalsi census data must be included (see \code{\link{Get_Invalsi_IS}}. \code{TRUE} by default.
 #' @param SchoolBuildings Logical. Whether the school buildings dataset must be included (see \code{link{Get_DB_MIUR}}, \code{\link{Util_DB_MIUR_num}}. \code{TRUE} by default.
@@ -29,6 +29,7 @@
 #' @param Invalsi_subj Character. If \code{Invalsi == TRUE}, the school subject(s) to include, among \code{"Englis_listening"}/\code{"ELI"}, \code{"English_reading"}/\code{"ERE"}, \code{"Italian"}/\code{"Ita"} and \code{"Mathematics"}/\code{"MAT"}. All four by default.
 #' @param Invalsi_grade Numeric. If \code{Invalsi == TRUE}, the educational grade to choose. Either \code{2} (2nd year of primary school), \code{5} (last year of primary school), \code{8} (last year of middle shcool), \code{10} (2nd year of high school) or \code{13} (last year of school). All by default.
 #' @param Invalsi_WLE Logical. Whether to express Invalsi scores as averagev WLE score rather that the percentage of sufficient tests, if both are Invalsi_grade is either or \code{2} \code{5}. \code{FALSE} by default
+#' @param SchoolBuildings_certifications Logical. If the school buldings database has to be downloaded, whether to include safety certifications.  Only relevant from schol year 2020/21 onwards (see \code{\link{Get_DB_MIUR}}). \code{FALSE} by default
 #' @param SchoolBuildings_include_numerics Logical. Whether to include strictly numeric variables alongside with Boolean ones in the school buildings database (see \code{\link{Util_DB_MIUR_num}}). \code{TRUE} by default.
 #' @param SchoolBuildings_include_qualitatives Logical. Whether to include qualitative variables alongside with Boolean ones in the school buildings database (see \code{\link{Util_DB_MIUR_num}}). \code{FALSE} by default.
 #' @param SchoolBuildings_row_cutout Logical. Whether to filter out rows including missing fields in the school buildings database (see \code{\link{Util_DB_MIUR_num}}). \code{FALSE} by default.
@@ -128,6 +129,7 @@ Set_DB <- function( Year = 2023,
                     Invalsi_subj = c("ELI", "ERE", "ITA", "MAT"),
                     Invalsi_grade = c(2,5,8,10,13),
                     Invalsi_WLE = FALSE,
+                    SchoolBuildings_certifications = FALSE,
                     SchoolBuildings_include_numerics = TRUE,
                     SchoolBuildings_include_qualitatives = FALSE,
                     SchoolBuildings_row_cutout = FALSE,
@@ -256,7 +258,7 @@ Set_DB <- function( Year = 2023,
     input_SchoolBuildings <-
       Get_DB_MIUR(Year = Year, verbose = verbose, show_col_types = show_col_types,
                   input_Registry = input_Registry, input_AdmUnNames = input_AdmUnNames,
-                  autoAbort = autoAbort)
+                  certifications = SchoolBuildings_certifications, autoAbort = autoAbort)
 
     if(is.null(input_SchoolBuildings)){
       if(!autoAbort){
@@ -405,6 +407,9 @@ Set_DB <- function( Year = 2023,
   }
 
   if(!is.null(input_SchoolBuildings)){
+    if(SchoolBuildings_certifications){
+      SchoolBuildings_include_numerics <- TRUE
+    }
     DB_SchoolBuildings_num <- input_SchoolBuildings %>% Util_DB_MIUR_num(
       include_numerics = SchoolBuildings_include_numerics,
       include_qualitatives = SchoolBuildings_include_qualitatives,
@@ -418,7 +423,7 @@ Set_DB <- function( Year = 2023,
                     count_missing = SchoolBuildings_count_missing,
                     InnerAreas = InnerAreas, ord_InnerAreas = ord_InnerAreas,
                     input_InnerAreas = input_InnerAreas)
-    if(level %in% c("LAU", "Municipality")){
+    if(toupper(level) %in% c("LAU", "MUNICIPALITY", "NUTS-4")){
       DB_SchoolBuildings <- DB_SchoolBuildings$Municipality_data
     } else DB_SchoolBuildings <- DB_SchoolBuildings$Province_data
     DB_SchoolBuildings <- DB_SchoolBuildings %>%
@@ -440,7 +445,7 @@ Set_DB <- function( Year = 2023,
                   input_Registry = input_Registry, input_InnerAreas = input_InnerAreas,
                   input_School2mun = input_School2mun, input_AdmUnNames = input_AdmUnNames)
     if(!is.data.frame(nstud_aggr)){
-      if(level %in% c("LAU", "Municipality")){
+      if(toupper(level) %in% c("LAU", "MUNICIPALITY", "NUTS-4")){
         datasets[["nstud"]] <- nstud_aggr$Municipality_data
       } else datasets[["nstud"]] <- nstud_aggr$Province_data
     } else datasets[["nstud"]] <- nstud_aggr
@@ -504,9 +509,12 @@ Set_DB <- function( Year = 2023,
 
   if(!is.null(input_Invalsi_IS)){
 
-    Invalsi_IS <- Util_Invalsi_filter(data = input_Invalsi_IS,
-                                      Year = Year, subj = Invalsi_subj, grade = Invalsi_grade, level = level,
-                                      WLE = Invalsi_WLE, verbose = verbose)
+    if(!any(grepl("_\\d+$", names(input_Invalsi_IS)))){
+      Invalsi_IS <- Util_Invalsi_filter(
+        data = input_Invalsi_IS, Year = Year, subj = Invalsi_subj,
+        grade = Invalsi_grade, level = level,
+        WLE = Invalsi_WLE, verbose = verbose)
+    } else Invalsi_IS <- input_Invalsi_IS
 
     SchoolOrder <- c(ifelse(any(Invalsi_grade < 6), "Primary", NA),
                      ifelse(8 %in% Invalsi_grade, "Middle", NA),
@@ -571,7 +579,7 @@ Set_DB <- function( Year = 2023,
                        "teachers4student", "nteachers")
   datasets <- Filter(Negate(is.null), datasets)
 
-  if(level %in% c("LAU", "Municipality")){
+  if(toupper(level) %in% c("LAU", "NUTS-4", "MUN", "MUNICIPALITY")){
 
     if(!is.null(datasets[["Invalsi_IS"]])){
       datasets[["Invalsi_IS"]] <- datasets[["Invalsi_IS"]] %>%

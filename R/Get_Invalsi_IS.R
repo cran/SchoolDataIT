@@ -38,16 +38,16 @@ Get_Invalsi_IS <- function(level = "LAU", verbose = TRUE, show_col_types = FALSE
   if(!Check_connection(autoAbort)) return(NULL)
 
   starttime <- Sys.time()
-  if (level %in% c("Municipality", "LAU")){
+  if (toupper(level) %in% c("MUNICIPALITY", "LAU", "NUTS-4")){
     nCol <- 10
     if (verbose) cat("Retrieving Invalsi census data for municipalities: \n")
     url.invalsi <- "https://serviziostatistico.invalsi.it/invalsi_ss_data/dati-comunali-di-popolazione-comune-del-plesso/"
-    name_pattern <- "report_comuni_plessi-2.csv"
-  } else if (level %in%c("Province", "NUTS-3") ){
+    name_pattern <- "report_comuni_plessi"
+  } else if (toupper(level) %in%c("PROVINCE", "NUTS-3") ){
     nCol <- 11
     if (verbose) cat("Retrieving Invalsi census data for provinces")
     url.invalsi <- "https://serviziostatistico.invalsi.it/invalsi_ss_data/dati-provinciali-di-popolazione/"
-    name_pattern <- "matrice_medie_provinciali-3.csv"
+    name_pattern <- "matrice_medie_provinciali"
   }
 
   homepage <- NULL
@@ -63,8 +63,9 @@ Get_Invalsi_IS <- function(level = "LAU", verbose = TRUE, show_col_types = FALSE
   status <- 0
   attempt <- 0
   while(status != 200 && attempt <= 10){
-    link <- homepage %>% rvest::html_nodes("a") %>% rvest::html_attr("href")
-    link <- grep(name_pattern, link, value = TRUE) %>% unique()
+    links <- homepage %>% rvest::html_nodes("a") %>% rvest::html_attr("href")
+    link <- unique(links[grepl(paste0(
+      "(?=.*", name_pattern, ")(?=.*\\.csv$)(?!.*", "livelli", ")"), links, perl = TRUE)])
     response <- tryCatch({
       httr::GET(link)
     }, error = function(e) {
