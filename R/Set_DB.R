@@ -17,7 +17,7 @@
 #' @param Year Numeric or Character. The relevant school year. Available in the formats: \code{2023}, \code{"2022/2023"}, \code{202223}, \code{20222023}.
 #' Important: if input datasets are plugged in, please select the same \code{Year} argument used to download the input data. \code{2023} by default.
 #' @param level Character. The administrative level of detail at which data must be aggregated.
-#' Either \code{"LAU"}/\code{"Municipality"/"NUTS-4"} or \code{"NUTS-3"}/\code{"Province"}. \code{"LAU"} by default.
+#' Either \code{"LAU"}/\code{"Municipality"} or \code{"NUTS-3"}/\code{"Province"}. \code{"LAU"} by default.
 #' @param conservative Logical. If \code{FALSE}, only the schools included in all the datasets are taken as input. \code{TRUE} by default.
 #' @param Invalsi Logical. Whether the Invalsi census data must be included (see \code{\link{Get_Invalsi_IS}}. \code{TRUE} by default.
 #' @param SchoolBuildings Logical. Whether the school buildings dataset must be included (see \code{link{Get_DB_MIUR}}, \code{\link{Util_DB_MIUR_num}}. \code{TRUE} by default.
@@ -407,28 +407,68 @@ Set_DB <- function( Year = 2023,
   }
 
   if(!is.null(input_SchoolBuildings)){
-    if(SchoolBuildings_certifications){
-      SchoolBuildings_include_numerics <- TRUE
+
+    if((is.data.frame(input_SchoolBuildings) &&
+        "School_code" %in% names(input_SchoolBuildings)) ||
+       (!is.data.frame(input_SchoolBuildings) &&
+        "School_code" %in% names(input_SchoolBuildings[[1]]))){
+      if(SchoolBuildings_certifications){
+        SchoolBuildings_include_numerics <- TRUE
+      }
+      if(!is.data.frame(input_SchoolBuildings)){
+        if("data" %in% names(input_SchoolBuildings)){
+          input_SchoolBuildings <- input_SchoolBuildings$data
+        } else input_SchoolBuildings <- input_SchoolBuildings[[1]]
+      }
+
+      fields_SchoolBuildings <- lapply(input_SchoolBuildings, is.numeric)
+
+      if(!any(unlist(fields_SchoolBuildings[-which(names(fields_SchoolBuildings) %in% c(
+        "Province_code", "Year", "Floors_number", "National_seismic_classification"))]))){
+        DB_SchoolBuildings_num <- input_SchoolBuildings %>% Util_DB_MIUR_num(
+          include_numerics = SchoolBuildings_include_numerics,
+          include_qualitatives = SchoolBuildings_include_qualitatives,
+          row_cutout = SchoolBuildings_row_cutout, flag_outliers = SchoolBuildings_flag_outliers,
+          track_deleted = FALSE,
+          col_cut_thresh = SchoolBuildings_col_cut_thresh,
+          verbose = verbose)
+      } else {
+        DB_SchoolBuildings_num <- input_SchoolBuildings
+      }
+      DB_SchoolBuildings <- DB_SchoolBuildings_num %>%
+        Group_DB_MIUR(verbose = verbose, track_deleted = FALSE, Year = Year,
+                      count_units = TRUE, countname = "nbuildings",
+                      count_missing = SchoolBuildings_count_missing,
+                      InnerAreas = InnerAreas, ord_InnerAreas = ord_InnerAreas,
+                      input_InnerAreas = input_InnerAreas)
+    } else{
+      DB_SchoolBuildings <- input_SchoolBuildings
+      if(is.data.frame(DB_SchoolBuildings)) SchoolBuildings_count_missing <- FALSE
     }
-    DB_SchoolBuildings_num <- input_SchoolBuildings %>% Util_DB_MIUR_num(
-      include_numerics = SchoolBuildings_include_numerics,
-      include_qualitatives = SchoolBuildings_include_qualitatives,
-      row_cutout = SchoolBuildings_row_cutout, flag_outliers = SchoolBuildings_flag_outliers,
-      track_deleted = FALSE,
-      col_cut_thresh = SchoolBuildings_col_cut_thresh,
-      verbose = verbose)
-    DB_SchoolBuildings <- DB_SchoolBuildings_num %>%
-      Group_DB_MIUR(verbose = verbose, track_deleted = FALSE, Year = Year,
-                    count_units = TRUE, countname = "nbuildings",
-                    count_missing = SchoolBuildings_count_missing,
-                    InnerAreas = InnerAreas, ord_InnerAreas = ord_InnerAreas,
-                    input_InnerAreas = input_InnerAreas)
+
     if(toupper(level) %in% c("LAU", "MUNICIPALITY", "NUTS-4")){
-      DB_SchoolBuildings <- DB_SchoolBuildings$Municipality_data
-    } else DB_SchoolBuildings <- DB_SchoolBuildings$Province_data
-    DB_SchoolBuildings <- DB_SchoolBuildings %>%
-      dplyr::filter(!.data$Order %in% c("IC", "IS", "NR")) %>%
-      dplyr::select(-.data$Year)
+      if(!SchoolBuildings_count_missing){
+        DB_SchoolBuildings <- DB_SchoolBuildings$Municipality_data
+      } else {
+        DB_SchoolBuildings <- dplyr::left_join(
+          DB_SchoolBuildings$Municipality_data,
+          DB_SchoolBuildings$Municipality_missing,
+          by = c("Municipality_code","Order"))
+      }
+    } else {
+      if(!SchoolBuildings_count_missing){
+        DB_SchoolBuildings <- DB_SchoolBuildings$Province_data
+      } else{
+        DB_SchoolBuildings <- dplyr::left_join(
+          DB_SchoolBuildings$Province_data,
+          DB_SchoolBuildings$Province_missing,
+          by = c("Province_code","Order"))
+      }
+    }
+      DB_SchoolBuildings <- DB_SchoolBuildings %>%
+      dplyr::filter(!.data$Order %in% c("IC", "IS", "NR"))
+      DB_SchoolBuildings <- DB_SchoolBuildings[, -which(
+        names(DB_SchoolBuildings) %in% c("Year", "nbuildings_MP"))]
 
     datasets[["SchoolBuildings"]] <- DB_SchoolBuildings
   }

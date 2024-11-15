@@ -11,11 +11,12 @@ Map_School_Buildings(
   level = "LAU",
   region_code = c(1:20),
   plot = "mapview",
-  pal = "Blues",
+  pal = "viridis",
   col_rev = FALSE,
   popup_height = 200,
   main_pos = "top",
   main = "",
+  only_observed = FALSE,
   verbose = TRUE,
   input_shp = NULL,
   autoAbort = FALSE,
@@ -40,7 +41,7 @@ By default, \code{c(1:20)}, i.e. all Italian regions.}
 
 \item{plot}{Character. The type of map to display; either \code{"mapview"} for interactive maps, or \code{"ggplot"} for static maps. \code{"mapview"} by default.}
 
-\item{pal}{Character. The palette to use if the \code{"mapview"} mode is chose. \code{"Blues"} by default.}
+\item{pal}{Character. The palette to use if the \code{"mapview"} mode is chose. \code{"viridis"} by default.}
 
 \item{col_rev}{Logical. Whether the scale of the colour palette should be reverted or not, if the \code{"mapview"} mode is chosen. \code{FALSE} by default}
 
@@ -50,6 +51,8 @@ By default, \code{c(1:20)}, i.e. all Italian regions.}
 The header is located on the top if \code{"top"} is given as input, and above the legend scale otherwise. \code{"top"} by default.}
 
 \item{main}{Character. The customary title to display in the \code{"ggplot"} rendering options}
+
+\item{only_observed}{Logical. Whether to remove unobserved areas from the plot. \code{FALSE} by default.}
 
 \item{verbose}{Logical. If \code{TRUE}, the user keeps track of the main underlying operations. \code{TRUE} by default.s}
 

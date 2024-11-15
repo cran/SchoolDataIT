@@ -11,7 +11,7 @@
 #'
 #' @return An object of class \code{tbl_df}, \code{tbl} and \code{data.frame}. The variables \code{BB_Activation_date} and \code{BB_Activation_staus} indicate the activation date and activation status of the broadband connection at the selected date.
 #'
-#' @source \href{https://bandaultralarga.italia.it/scuole-voucher/dashboard-scuole/}{Broadband dashboard}
+#' @source  Broadband dashboard: <https://bandaultralarga.italia.it/scuole-voucher/dashboard-scuole/>
 #'
 #'
 #' @details Ultra - Broadband is defined as everlasting internet connection with a
@@ -65,6 +65,7 @@ Get_BroadBand <- function(Date = Sys.Date(), verbose=TRUE,  show_col_types = FAL
   file.url <- xml2::url_absolute(link, base.url)
 
   status <- 0
+  attempt <- 0
   while(status != 200){
     response <- tryCatch({
       httr::GET(file.url)
@@ -77,7 +78,13 @@ Get_BroadBand <- function(Date = Sys.Date(), verbose=TRUE,  show_col_types = FAL
       status <- 0
     }
     if(status != 200){
-      message("Operation exited with status: ", status, "; operation repeated")
+      attempt <- attempt + 1
+      message("Operation exited with status: ", status, "; operation repeated (",
+              10 - attempt, " attempts left)")
+    }
+    if(attempt >= 10) {
+      message("Maximum attempts reached. Abort. We apologise for the inconvenience")
+      return(NULL)
     }
   }
 

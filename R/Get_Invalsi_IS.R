@@ -19,8 +19,8 @@
 #'
 #' @return An object of class \code{tbl_df}, \code{tbl} and \code{data.frame}
 #'
-#' @source  \href{https://serviziostatistico.invalsi.it/invalsi_ss_data/dati-comunali-di-popolazione-comune-del-plesso/}{Municipality data};
-#'                       \href{https://serviziostatistico.invalsi.it/invalsi_ss_data/dati-provinciali-di-popolazione/}{Province data}
+#' @source  Municipality data: <https://serviziostatistico.invalsi.it/invalsi_ss_data/dati-comunali-di-popolazione-comune-del-plesso/>;
+#' Province data: <https://serviziostatistico.invalsi.it/invalsi_ss_data/dati-provinciali-di-popolazione/>
 #'
 #'
 #'
@@ -72,23 +72,22 @@ Get_Invalsi_IS <- function(level = "LAU", verbose = TRUE, show_col_types = FALSE
       message("Error occurred during scraping, attempt repeated ... \n")
       NULL
     })
+    status <- response$status_code
     if(is.null(response)){
       status <- 0
-    }else{
-      status <- response$status_code
-      if(status != 200) {
-        if(!autoAbort){
-          message("Error occurred; connection exited with status ", status, " ; ", 10 - attempt, " attempts left \n",
-                  "To abort the operation, press `A`; to hold on press any key \n")
-          holdOn <- readline(prompt = "    ")
-          if(holdOn == "A") {
-            message("You chose to abort the operation. We apologise for the inconvenience.")
-            return(NULL)
-          }
-        } else return(NULL)
-      }
     }
-    attempt <- attempt + 1
+    if(status != 200) {
+      attempt <- attempt + 1
+      if(!autoAbort){
+        message("Error occurred; connection exited with status ", status, " ; ", 10 - attempt, " attempts left \n",
+                "To abort the operation, press `A`; to hold on press any key \n")
+        holdOn <- readline(prompt = "    ")
+        if(holdOn == "A") {
+          message("You chose to abort the operation. We apologise for the inconvenience.")
+          return(NULL)
+        }
+      } else return(NULL)
+    }
   }
   if(status == 200){
     if(verbose) cat("Encoding raw content in UTF-8 \n")
@@ -128,7 +127,7 @@ Get_Invalsi_IS <- function(level = "LAU", verbose = TRUE, show_col_types = FALSE
     stringr::str_replace_all("Italiano", "Italian") %>%
     stringr::str_replace_all("Inglese", "English")
 
-  if(level %in% c ("LAU","Municipality")){
+  if (toupper(level) %in% c("MUNICIPALITY", "LAU", "NUTS-4")){
     Invalsi_IS <- Invalsi_IS %>%
       dplyr::mutate(Municipality_code = sprintf("%06d", .data$Municipality_code)) %>%
       dplyr::mutate(Municipality_description = stringr::str_to_title(.data$Municipality_description))

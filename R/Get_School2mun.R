@@ -77,17 +77,25 @@ Get_School2mun <- function(Year = 2023, show_col_types = FALSE, verbose = TRUE,
   home.url <-"https://dati.istruzione.it/opendata/opendata/catalogo/elements1/?area=Edilizia%20Scolastica"
   homepage <- NULL
   attempt <- 0
-  while(is.null(homepage) && attempt <= 10){
+  while(is.null(homepage)){
     homepage <- tryCatch({
       xml2::read_html(home.url)
     }, error = function(e){
-      message("Cannot read the html; ", 10 - attempt,
-              " attempts left. If the problem persists, please contact the mantainer.\n")
+      message("Cannot read the html. If the problem persists, please contact the mantainer.\n")
       return(NULL)
     })
-    attempt <- attempt + 1
+
+    if(is.null(homepage)){
+      attempt <- attempt + 1
+      message("Operation exited with status: ", status, "; operation repeated (",
+              10 - attempt, " attempts left)")
+    }
+    if(attempt >= 10) {
+      message("Maximum attempts reached. Abort. We apologise for the inconvenience")
+      return(NULL)
+    }
   }
-  if(is.null(homepage)) return(NULL)
+  #if(is.null(homepage)) return(NULL)
   name_pattern <- "([0-9]+)\\.(csv)$"
   links <- homepage %>% rvest::html_nodes("a") %>% rvest::html_attr("href") %>%
     unique()
@@ -112,6 +120,7 @@ Get_School2mun <- function(Year = 2023, show_col_types = FALSE, verbose = TRUE,
   file.url <- file.path(base.url, file_to_download)
 
   status <- 0
+  attempt <- 0
   while(status != 200){
     response <- tryCatch({
       httr::GET(file.url)
@@ -123,8 +132,18 @@ Get_School2mun <- function(Year = 2023, show_col_types = FALSE, verbose = TRUE,
     if(is.null(response)){
       status <- 0
     }
+    status <- response$status_code
+    if(is.null(response)){
+      status <- 0
+    }
     if(status != 200){
-      message("Operation exited with status: ", status, "; operation repeated")
+      attempt <- attempt + 1
+      message("Operation exited with status: ", status, "; operation repeated (",
+              10 - attempt, " attempts left)")
+    }
+    if(attempt >= 10) {
+      message("Maximum attempts reached. Abort. We apologise for the inconvenience")
+      return(NULL)
     }
   }
 
