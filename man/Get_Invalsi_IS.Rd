@@ -4,14 +4,14 @@
 \alias{Get_Invalsi_IS}
 \title{Download the Invalsi census survey data}
 \source{
-Municipality data: <https://serviziostatistico.invalsi.it/invalsi_ss_data/dati-comunali-di-popolazione-comune-del-plesso/>;
-Province data: <https://serviziostatistico.invalsi.it/invalsi_ss_data/dati-provinciali-di-popolazione/>
+<https://serviziostatistico.invalsi.it/en/archivio-dati/?_sft_invalsi_ss_data_collective=open-data>
 }
 \usage{
 Get_Invalsi_IS(
   level = "LAU",
   verbose = TRUE,
   show_col_types = FALSE,
+  multiple_out = FALSE,
   autoAbort = FALSE
 )
 }
@@ -22,14 +22,21 @@ Get_Invalsi_IS(
 
 \item{show_col_types}{Logical. If \code{TRUE}, if the \code{verbose} argument is also \code{TRUE}, the columns of the raw dataset are shown during the download. \code{FALSE} by default.}
 
+\item{multiple_out}{Logical. Wheter keeping
+multiple dataframes as outputs (thus overriding the \code{level} argument) or not.
+\code{FALSE} by default.}
+
 \item{autoAbort}{Logical. Whether to automatically abort the operation and return NULL in case of missing internet connection or server response errors. \code{FALSE} by default.}
 }
 \value{
-An object of class \code{tbl_df}, \code{tbl} and \code{data.frame}
+Unless \code{multiple_out == TRUE}, an object of class \code{tbl_df}, \code{tbl} and \code{data.frame}.
+Otherwise, a list including objects of the aforementioned classes
 }
 \description{
 Downloads the full database of the Invalsi scores, detailed either at the municipality or province level.
-The format is intermediate between long and short, since the numeric variables are:
+}
+\details{
+Numeric variables provided are:
 \itemize{
   \item \code{Average_percentage_score} Average direct score (percentage of sufficient tests)
   \item \code{Std_dev_percentage_score} Standard deviation of the direct score
@@ -37,10 +44,29 @@ The format is intermediate between long and short, since the numeric variables a
   \item \code{Std_dev_WLE_score} Standard deviation of the WLE score. By construction it ranges around 40 points at the school level.
   \item \code{Students_coverage} Students coverage percentage
 }
+Additional numeric variables, not always available for all observational units, are:
+\itemize{
+  \item Mean and SD of ESCS indicator
+  \item \code{First-Fifth_Level}: Distribution of the proficiency level of students
+  \item \code{Targets_percentage}: Percentage of students reaching targets
+}
+Numeric codes \code{888} and \code{999} denote not applicable and not available fields respectively.
+
+If \code{multiple_out == TRUE}, provides the following datasets:
+\itemize{
+  \item \code{Municipality_data}: LAU-level data
+  \item \code{Province_data}: NUTS-3-level data
+  \item \code{Region_data}: NUTS-2-level data
+  \item \code{LLS_data}: data at the level of local labour systems
+  (Sistemi Locali del Lavoro; see \href{https://www.istat.it/statistiche-per-temi/focus/informazioni-territoriali-e-cartografiche/statistiche-sul-territorio/sistemi-locali-del-lavoro-e-distretti-industriali/}{ISTAT webpage} for details)
+  \item \code{Inner_Areas_2021_data} aggregated data for inner areas according to the 2020 taxonomy
+  \item \code{Inner_Areas_2014_data} aggregated data for inner areas according to the former 2014 taxonomy
+  \item \code{Macroarea_data} data aggregated for North-West, North-East, Center, South and Islands
+}
 }
 \examples{
 \donttest{
-Get_Invalsi_IS(level = "NUTS-3", autoAbort = TRUE)
+Get_Invalsi_IS(level = "NUTS-3", autoAbort = TRUE, verbose = FALSE)
 }
 
 

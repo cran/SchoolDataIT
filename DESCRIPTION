@@ -2,7 +2,7 @@ Package: SchoolDataIT
 Type: Package
 Title: Retrieve, Harmonise and Map Open Data Regarding the Italian
         School System
-Version: 0.2.2
+Version: 0.2.3
 Authors@R: c(person(given = "Leonardo", 
              family = "Cefalo", 
              role = c("aut", "cre"),
@@ -40,6 +40,6 @@ Suggests: knitr, rmarkdown, testthat (>= 3.0.0), tidyverse
 Config/testthat/edition: 3
 Depends: R (>= 2.10)
 NeedsCompilation: no
-Packaged: 2024-11-14 16:30:24 UTC; Leonardo
+Packaged: 2025-01-08 12:07:34 UTC; Leonardo
 Repository: CRAN
-Date/Publication: 2024-11-15 00:30:03 UTC
+Date/Publication: 2025-01-08 23:50:21 UTC

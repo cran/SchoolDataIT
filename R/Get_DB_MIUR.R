@@ -9,7 +9,7 @@
 #' @param Year Numeric or character value. Reference school year (last available is 2023).
 #' Available in the formats: \code{2023}, \code{"2022/2023"}, \code{202223}, \code{20222023}. \code{2022} by default (other databases are not currently available for 2023).
 #' @param input_Registry Object of class \code{tbl_df}, \code{tbl} and \code{data.frame}.
-#' The school registry corresonding to the year in scope, obtained as output of the  function \code{\link{Get_Registry}}.
+#' The school registry corresponding to the year in scope, obtained as output of the  function \code{\link{Get_Registry}}.
 #' If \code{NULL}, it will be downloaded automatically, but not saved in the global environment.
 #' \code{NULL} by default.
 #' @param certifications Logical. From year 2021/22 onwards, whether to include some safety certifications in the database.
@@ -65,7 +65,7 @@ Get_DB_MIUR <- function(Year = 2023, verbose = TRUE, input_Registry = NULL,
       xml2::read_html(home.url)
     }, error = function(e){
       message("Cannot read the html; ", 10 - attempt,
-              " attempts left. If the problem persists, please contact the mantainer.\n")
+              " attempts left. If the problem persists, please contact the maintainer.\n")
       return(NULL)
     })
     attempt <- attempt + 1
