@@ -2,7 +2,7 @@ Package: SchoolDataIT
 Type: Package
 Title: Retrieve, Harmonise and Map Open Data Regarding the Italian
         School System
-Version: 0.2.4
+Version: 0.2.6
 Authors@R: c(person(given = "Leonardo", 
              family = "Cefalo", 
              role = c("aut", "cre"),
@@ -18,9 +18,11 @@ Authors@R: c(person(given = "Leonardo",
              role = c("ctb"),
              email = "pmaranzano.ricercastatistica@gmail.com",
              comment = c(ORCID = "0000-0002-9228-2759")))
-Author: Leonardo Cefalo [aut, cre] (<https://orcid.org/0009-0001-7776-723X>),
-  Alessio Pollice [ctb, ths] (<https://orcid.org/0000-0002-2818-9373>),
-  Paolo Maranzano [ctb] (<https://orcid.org/0000-0002-9228-2759>)
+Author: Leonardo Cefalo [aut, cre] (ORCID:
+    <https://orcid.org/0009-0001-7776-723X>),
+  Alessio Pollice [ctb, ths] (ORCID:
+    <https://orcid.org/0000-0002-2818-9373>),
+  Paolo Maranzano [ctb] (ORCID: <https://orcid.org/0000-0002-9228-2759>)
 Maintainer: Leonardo Cefalo <leonardo.cefalo@uniba.it>
 Description: Compiles and displays the available data sets regarding the Italian school system, with a focus on the infrastructural aspects.
     Input datasets are downloaded from the web, with the aim of updating everything to real time.  
@@ -40,6 +42,6 @@ Suggests: knitr, rmarkdown, testthat (>= 3.0.0), tidyverse
 Config/testthat/edition: 3
 Depends: R (>= 2.10)
 NeedsCompilation: no
-Packaged: 2025-03-28 12:39:46 UTC; Leonardo
+Packaged: 2025-05-14 08:23:33 UTC; Leonardo
 Repository: CRAN
-Date/Publication: 2025-03-28 13:30:02 UTC
+Date/Publication: 2025-05-14 08:40:05 UTC
