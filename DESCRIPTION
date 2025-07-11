@@ -2,7 +2,7 @@ Package: SchoolDataIT
 Type: Package
 Title: Retrieve, Harmonise and Map Open Data Regarding the Italian
         School System
-Version: 0.2.6
+Version: 0.2.7
 Authors@R: c(person(given = "Leonardo", 
              family = "Cefalo", 
              role = c("aut", "cre"),
@@ -38,10 +38,10 @@ LazyData: true
 RoxygenNote: 7.3.2
 Imports: curl, dplyr, ggplot2, grDevices, httr, leafpop, magrittr,
         mapview, readr, rlang, rvest, sf, stringr, tidyr, utils, xml2
-Suggests: knitr, rmarkdown, testthat (>= 3.0.0), tidyverse
+Suggests: knitr, readxl, rmarkdown, testthat (>= 3.0.0), tidyverse
 Config/testthat/edition: 3
 Depends: R (>= 2.10)
 NeedsCompilation: no
-Packaged: 2025-05-14 08:23:33 UTC; Leonardo
+Packaged: 2025-07-11 10:11:54 UTC; Leonardo
 Repository: CRAN
-Date/Publication: 2025-05-14 08:40:05 UTC
+Date/Publication: 2025-07-11 10:40:07 UTC
